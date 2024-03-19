@@ -2,12 +2,11 @@ import torch
 import pytorch_lightning as pl
 import multiprocessing
 from copy import deepcopy
-from torch.utils.data import DataLoader, Dataset, TensorDataset #TODO: remove TensorDataset
-from . import model
+from .. import model
 
 #TODO: pass this function inside torch_utils
 # Define a custom PyTorch Dataset class named DictDataset
-class DictDataset(Dataset):
+class DictDataset(torch.utils.data.Dataset):
     """
     Custom PyTorch Dataset class that takes a dictionary as input and returns items based on keys.
 
@@ -172,7 +171,7 @@ class DictSequentialDataset(DictDataset):
             self.data[key] = self.data[key][orig_rows_repeat]
 
 # Define a custom PyTorch DataLoader class for recommendation datasets, inheriting from DataLoader
-class RecommendationDataloader(DataLoader):
+class RecommendationDataloader(torch.utils.data.DataLoader):
     # Constructor to initialize the dataloader with required parameters and additional options
     """
     Custom PyTorch DataLoader class for recommendation datasets, extending the base DataLoader class.
