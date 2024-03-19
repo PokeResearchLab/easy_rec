@@ -2,7 +2,7 @@ import torch
 import pytorch_lightning as pl
 import multiprocessing
 from copy import deepcopy
-from .. import model
+from . import model
 
 #TODO: pass this function inside torch_utils
 # Define a custom PyTorch Dataset class named DictDataset
