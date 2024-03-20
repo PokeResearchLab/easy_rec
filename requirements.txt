@@ -2,3 +2,5 @@
 
 # List of required Python packages for your project
 # Each package should be listed on a separate line
+
+torch
