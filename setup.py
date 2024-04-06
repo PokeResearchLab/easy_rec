@@ -15,9 +15,9 @@ if os.path.isfile("requirements.txt"):
 
 # Define the package setup configuration
 setup(
-    name='Rec Utils',  # Replace with your package name
+    name='Easy Rec',  # Replace with your package name
     packages=find_packages(),  # List of all packages included in your project
-    description='Rec Utils: A set of utilities for recommendation systems',
+    description='Easy Rec: A set of utilities for recommendation systems',
     long_description=long_description,  # Use the contents of README.md as the long description
     long_description_content_type="text/markdown",
     version='1.0.0',  # Specify the version of your package
