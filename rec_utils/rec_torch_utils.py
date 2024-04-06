@@ -4,7 +4,7 @@ import multiprocessing
 from copy import deepcopy
 from . import model
 
-#TODO: pass this function inside torch_utils
+#TODO: pass this function inside easy_torch
 # Define a custom PyTorch Dataset class named DictDataset
 class DictDataset(torch.utils.data.Dataset):
     """
@@ -36,7 +36,7 @@ class DictDataset(torch.utils.data.Dataset):
         # Assumes that all values in the data dictionary have the same length
         return len(self.data[list(self.data.keys())[0]])
 
-#TODO: pass this function inside torch_utils
+#TODO: pass this function inside easy_torch
 # Define a custom PyTorch Dataset class named DictSequentialDataset that extends DictDataset
 class DictSequentialDataset(DictDataset):
     # Constructor to initialize the sequential dataset with additional parameters

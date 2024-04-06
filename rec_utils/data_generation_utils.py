@@ -10,7 +10,7 @@ from ast import literal_eval
 import datetime
 from scipy import stats
 
-from data_utils.data import split_data
+from easy_data.data import split_data
 
 
 def preprocess_dataset(name, 
@@ -45,7 +45,7 @@ def preprocess_dataset(name,
         Tuple: Preprocessed data and mapping information.
     '''
     
-    #TODO: variable split dataset? OR move train-test split to basic data_utils?
+    #TODO: variable split dataset? OR move train-test split to basic easy_data?
     # if split_method=="leave_n_out" and min_items_per_user<np.sum(test_sizes):
     #     raise ValueError('Need at least 3+test_num_samples ratings per user for input, train, validation and test: min_items_per_user --> 3+test_num_samples')
 
