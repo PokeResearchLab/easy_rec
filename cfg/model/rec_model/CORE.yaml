@@ -1,0 +1,16 @@
+name: CORE
+
+emb_size: 50   #dimension of latent dimension
+sess_dropout_rate: 0.2
+item_dropout_rate: 0.2
+
+^/step_routing:
+  model_input_from_batch: ["in_sid", "out_sid"]
+  loss_input_from_model_output:
+    input: null
+
+__global__:
+  data_params.dataset_params.keep_last.train: 1
+  data_params.dataset_params.keep_last.val: null
+  data_params.dataset_params.keep_last.test: null
+  data_params.dataset_params.stride: 10

@@ -43,17 +43,17 @@ Below is an outline of key files and folders you'll find in this project, along 
 
 ### Folders
 
-1. **data_utils**
+1. **easy_data**
     - Contains utilities for data loading, file management, data and data structure management, data splitting, and statistics.
 
-2. **exp_utils**
+2. **easy_exp**
     - Manages experiments by defining unique IDs based on their configuration.
     - Allows for hashing of each ID to check for previously conducted experiments.
     - Excludes GPU/CPU usage and training modes from the experiment ID.
     - Saves experiments in a specific file along with their relative configuration.
     - Includes methods for parsing YAML configs and handles special characters used in them (e.g., through `var.py`).
 
-3. **torch_utils**
+3. **easy_torch**
     - Includes functions for metrics, loading models, and creating trainers in PyTorch Lightning.
     - Defines steps, loss, optimizer, and other parameters to use.
     - Sets callbacks and dataloaders.

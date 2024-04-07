@@ -17,7 +17,7 @@ from .sequential.CORE import CORE
 from ._version import __version__  # Import the '__version__' variable from this package
 
 # The '__all__' variable can be used to specify which symbols are exported when
-# someone uses 'from exp_utils import *'. However, the following symbols are commented out.
+# someone uses 'from easy_exp import *'. However, the following symbols are commented out.
 # You can uncomment them if you want them to be exported.
 
 # __all__ = [

@@ -10,7 +10,7 @@ from ast import literal_eval
 import datetime
 from scipy import stats
 
-from data_utils.data import split_data
+from easy_data.data import split_data
 
 
 def preprocess_dataset(name, 
@@ -45,7 +45,7 @@ def preprocess_dataset(name,
         Tuple: Preprocessed data and mapping information.
     '''
     
-    #TODO: variable split dataset? OR move train-test split to basic data_utils?
+    #TODO: variable split dataset? OR move train-test split to basic easy_data?
     # if split_method=="leave_n_out" and min_items_per_user<np.sum(test_sizes):
     #     raise ValueError('Need at least 3+test_num_samples ratings per user for input, train, validation and test: min_items_per_user --> 3+test_num_samples')
 
@@ -145,7 +145,7 @@ def specific_preprocess(dataset_raw_folder, dataset_name):
         dataset_name (str): Name of the dataset.
     '''
     
-     #TODO filippo check the code for ML-20M, Gowalla
+    #TODO filippo check the code for ML-20M, Gowalla
     # For the "steam" dataset
     if dataset_name == "steam":
         # File path for the Steam dataset
@@ -445,10 +445,10 @@ def split_rec_data(data, split_method, split_keys, test_sizes, **kwargs):
                 previous_key = new_key
             if "del_after_split" in kwargs and kwargs["del_after_split"]:
                 del data[orig_key]
-    elif split_method == 'hold_out':
-        data = split_data(data, split_keys, test_sizes, **kwargs) #split per user
-    #TODO: split by interactions
-        #...
+    # elif split_method == 'hold_out':
+    #     data = split_data(data, split_keys, test_sizes, **kwargs) #split per user
+    # #TODO: split by interactions
+    #     #...
     else:
         raise NotImplementedError
     return data
