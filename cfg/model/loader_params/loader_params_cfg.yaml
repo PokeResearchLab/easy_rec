@@ -1,0 +1,10 @@
+batch_size: 128 #2048
+# num_workers: 1
+# shuffle: True
+persistent_workers: True
+pin_memory: True
+num_negatives:
+  train: 1
+  val: 1
+  test: 100
+padding_value: ${data_params.dataset_params.padding_value}

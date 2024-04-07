@@ -145,7 +145,7 @@ def specific_preprocess(dataset_raw_folder, dataset_name):
         dataset_name (str): Name of the dataset.
     '''
     
-     #TODO filippo check the code for ML-20M, Gowalla
+    #TODO filippo check the code for ML-20M, Gowalla
     # For the "steam" dataset
     if dataset_name == "steam":
         # File path for the Steam dataset
@@ -445,10 +445,10 @@ def split_rec_data(data, split_method, split_keys, test_sizes, **kwargs):
                 previous_key = new_key
             if "del_after_split" in kwargs and kwargs["del_after_split"]:
                 del data[orig_key]
-    elif split_method == 'hold_out':
-        data = split_data(data, split_keys, test_sizes, **kwargs) #split per user
-    #TODO: split by interactions
-        #...
+    # elif split_method == 'hold_out':
+    #     data = split_data(data, split_keys, test_sizes, **kwargs) #split per user
+    # #TODO: split by interactions
+    #     #...
     else:
         raise NotImplementedError
     return data

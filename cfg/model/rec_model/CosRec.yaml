@@ -1,0 +1,18 @@
+name: CosRec
+
+emb_size: 50 #[32, 64, 128, 256, 512] #50
+block_dims: [128, 256]
+fc_dim: 150
+act_fc: Tanh
+dropout_rate: 0.5
+
+^/step_routing:
+  model_input_from_batch: ["in_sid", "out_sid"]
+  loss_input_from_model_output:
+    input: null
+
+__global__:
+  data_params.dataset_params.keep_last.train: 1
+  data_params.dataset_params.keep_last.val: null
+  data_params.dataset_params.keep_last.test: null
+  data_params.dataset_params.stride: 10
