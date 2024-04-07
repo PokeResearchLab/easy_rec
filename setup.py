@@ -22,7 +22,7 @@ setup(
     long_description_content_type="text/markdown",
     version='1.0.0',  # Specify the version of your package
     install_requires=install_requires,  # List of required dependencies
-    url='https://github.com/federicosiciliano/easy_rec.git',  # Replace with the URL of your GitHub repository
+    url='https://github.com/PokeResearchLab/easy_rec.git',  # Replace with the URL of your GitHub repository
     author='Federico Siciliano',
     author_email='siciliano@diag.uniroma1.it',
     keywords=['MachineLearning', 'Recommendation Systems']  # Keywords related to your package
