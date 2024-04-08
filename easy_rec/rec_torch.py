@@ -409,7 +409,7 @@ def prepare_rec_data_loaders(datasets, data,
 
     return loaders
 
-def create_rec_model(name, seed=42, **model_params):
+def create_rec_model(name, seed=42, additional_module=None, **model_params):
     """
     Create a recommendation model.
 
@@ -424,4 +424,11 @@ def create_rec_model(name, seed=42, **model_params):
     # Set a random seed for weight initialization
     pl.seed_everything(seed)
     # Get the model from the model module
-    return getattr(model, name)(**model_params)
+    if hasattr(additional_module, name):
+        model_module = additional_module
+    elif hasattr(model, name):
+        model_module = model
+    else:
+        raise NotImplementedError(f"The model {name} is not found in model submodule or additional module")
+
+    return getattr(model_module, name)(**model_params)
