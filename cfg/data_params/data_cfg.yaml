@@ -1,4 +1,4 @@
-name: ml-1m #[amazon_beauty, ml-100k, ml-1m, steam] #the name of the dataset
+name: ml-100k #[amazon_beauty, ml-100k, ml-1m, steam] #the name of the dataset
 /data_folder: ../data/raw/  #path of the dataset
 
 # preprocessing
