@@ -1,0 +1,166 @@
+{
+    "data_params": {
+        "collator_params": {
+            "lookback": 30,
+            "lookforward": 3,
+            "num_items": 3416,
+            "num_negatives": {
+                "test": 100,
+                "train": 1,
+                "val": 1
+            },
+            "out_seq_len": {
+                "test": 1,
+                "train": null,
+                "val": 1
+            },
+            "padding_value": 0,
+            "sequential_keys": [
+                "sid"
+            ],
+            "simultaneous_lookforward": 5
+        },
+        "data_folder": "../data/raw",
+        "dataset_params": {
+            "split_keys": {
+                "test": [
+                    "sid",
+                    "uid"
+                ],
+                "train": [
+                    "sid",
+                    "uid"
+                ],
+                "val": [
+                    "sid",
+                    "uid"
+                ]
+            }
+        },
+        "densify_index": true,
+        "min_items_per_user": 5,
+        "min_rating": 0,
+        "min_users_per_item": 5,
+        "name": "ml-1m",
+        "split_method": "leave_n_out",
+        "test_sizes": [
+            1,
+            1,
+            0
+        ]
+    },
+    "model": {
+        "emission_tracker": {
+            "log_level": "critical",
+            "output_dir": "../out/log/prova/",
+            "tracking_mode": "process"
+        },
+        "loader_params": {
+            "batch_size": 128,
+            "num_workers": 1,
+            "persistent_workers": false,
+            "pin_memory": false
+        },
+        "log_params": {
+            "on_epoch": true,
+            "on_step": false
+        },
+        "loss": "SequentialBCEWithLogitsLoss",
+        "metrics": [
+            "Precision",
+            "Recall",
+            "F1",
+            "MAP",
+            "NDCG",
+            "MRR"
+        ],
+        "optimizer": {
+            "name": "Adam"
+        },
+        "rec_model": {
+            "dropout_rate": 0.2,
+            "emb_size": 50,
+            "lookback": 30,
+            "name": "SASRec",
+            "num_blocks": 2,
+            "num_heads": 1,
+            "num_items": 3416,
+            "num_users": 6040
+        },
+        "step_routing": {
+            "loss_input_from_batch": {
+                "target": "relevance"
+            },
+            "loss_input_from_model_output": {
+                "input": null
+            },
+            "metrics_input_from_batch": {
+                "F1": {
+                    "relevance": "relevance"
+                },
+                "MAP": {
+                    "relevance": "relevance"
+                },
+                "MRR": {
+                    "relevance": "relevance"
+                },
+                "NDCG": {
+                    "relevance": "relevance"
+                },
+                "Precision": {
+                    "relevance": "relevance"
+                },
+                "Recall": {
+                    "relevance": "relevance"
+                }
+            },
+            "metrics_input_from_model_output": {
+                "F1": {
+                    "scores": null
+                },
+                "MAP": {
+                    "scores": null
+                },
+                "MRR": {
+                    "scores": null
+                },
+                "NDCG": {
+                    "scores": null
+                },
+                "Precision": {
+                    "scores": null
+                },
+                "Recall": {
+                    "scores": null
+                }
+            },
+            "model_input_from_batch": [
+                "in_sid",
+                "out_sid"
+            ]
+        },
+        "trainer_params": {
+            "accelerator": "cpu",
+            "callbacks": [
+                {
+                    "ModelCheckpoint": {
+                        "dirpath": "../out/models/prova/",
+                        "filename": "best",
+                        "mode": "min",
+                        "monitor": "val_loss/dataloader_idx_0",
+                        "save_last": true,
+                        "save_top_k": 1
+                    }
+                }
+            ],
+            "enable_checkpointing": true,
+            "logger": {
+                "name": "CSVLogger",
+                "params": {
+                    "save_dir": "../out/log/prova/"
+                }
+            },
+            "max_epochs": 1
+        }
+    }
+}

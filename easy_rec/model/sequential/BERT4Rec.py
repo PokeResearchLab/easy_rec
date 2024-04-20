@@ -28,6 +28,8 @@ class BERT4Rec(torch.nn.Module):
         self.pos_emb = torch.nn.Embedding(lookback, emb_size)
         self.dropout = torch.nn.Dropout(p=dropout_rate)
 
+        #TODO: make feedforward dim a parameter; also activation
+
         encoder_layer = torch.nn.TransformerEncoderLayer(emb_size, bert_num_heads, emb_size * 4, dropout_rate,
                                                     torch.nn.GELU(), batch_first = True, norm_first = True)
         self.encoder = torch.nn.TransformerEncoder(encoder_layer, bert_num_blocks)

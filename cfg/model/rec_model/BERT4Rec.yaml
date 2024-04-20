@@ -1,6 +1,6 @@
 name: BERT4Rec
 
-emb_size: [32, 64, 128, 256, 512] #52 #256 
+emb_size: [32, 64, 128, 256, 512] #52 #256
 bert_num_blocks: 2
 bert_num_heads: 4
 dropout_rate: 0.1
