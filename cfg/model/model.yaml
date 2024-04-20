@@ -54,4 +54,4 @@ log_params:
 
 +emission_tracker: emission_tracker_cfg
 
-+rec_model: SASRec
++rec_model: GRU4Rec
