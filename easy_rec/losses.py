@@ -12,8 +12,9 @@ class SequentialBCEWithLogitsLoss(torch.nn.BCEWithLogitsLoss):
         return output
     
 class SequentialBPR(torch.nn.Module):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, eps = 1e-6, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.eps = eps
 
     def forward(self, input, target):
         # Input shape: (batch_size, timesteps, num_items)
