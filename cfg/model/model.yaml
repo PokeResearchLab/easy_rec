@@ -4,7 +4,7 @@ optimizer:
   #   lr: 1.0e-3
   #   betas: [0.9, 0.98]
 
-loss: SequentialBCEWithLogitsLoss
+loss: SequentialBPR
 
 metrics:
   - Precision
@@ -54,4 +54,6 @@ log_params:
 
 +emission_tracker: emission_tracker_cfg
 
-+rec_model: GRU4Rec
++flops_profiler: flops_profiler_cfg
+
++rec_model: SASRec

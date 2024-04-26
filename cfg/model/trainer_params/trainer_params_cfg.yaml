@@ -1,6 +1,6 @@
 accelerator: cpu #cuda #cpu
 /enable_checkpointing: True
-max_epochs: 1
+max_epochs: 3
 callbacks:
     - ModelCheckpoint:
         /dirpath: ${__exp__.project_folder}out/models/${__exp__.name}/
@@ -10,10 +10,10 @@ callbacks:
         monitor: val_NDCG_@10/dataloader_idx_0 #val_loss/dataloader_idx_0
         mode: max #min 
 /logger:
-    name: WandbLogger #CSVLogger
+    name: CSVLogger #WandbLogger
     params:
         save_dir: ${__exp__.project_folder}out/log/${__exp__.name}/
-        /config: ${__exp__.wandb.config}
-        /entity: ${__exp__.wandb.entity}
-        /project: ${__exp__.wandb.project}
+    #     /config: ${__exp__.wandb.config}
+    #     /entity: ${__exp__.wandb.entity}
+    #     /project: ${__exp__.wandb.project}
 

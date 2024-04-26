@@ -19,20 +19,19 @@ class SequentialBPR(torch.nn.Module):
     def forward(self, input, target):
         # Input shape: (batch_size, timesteps, num_items)
         # Output shape: (batch_size, timesteps, num_items)
+        is_not_nan = ~torch.isnan(target)
 
         # Change relevance from 0,1 to -1,1
         new_target = target * 2 - 1
+        new_target[~is_not_nan] = 0
 
         # Pair items in the same timestep
-        # (batch_size, timesteps, num_items, num_items)
         item_per_relevance = (input * new_target)
-        item_i_per_relevance = item_per_relevance.unsqueeze(-1)
-        item_j_per_relevance = item_per_relevance.unsqueeze(-2)
-        paired_items = item_i_per_relevance + item_j_per_relevance
+        sum_per_items = item_per_relevance.sum(dim=-1)
         
-        is_not_nan = ~torch.isnan(paired_items)
-        
-        bpr = torch.log(torch.sigmoid(paired_items[is_not_nan])+self.eps)
+        bpr = torch.log(torch.sigmoid(sum_per_items)+self.eps)
+
+        bpr = bpr[is_not_nan.any(dim=-1)]
         
         bpr = -bpr.mean()
 

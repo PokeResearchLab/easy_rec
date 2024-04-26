@@ -1,10 +1,14 @@
 #!/bin/bash
 
+cd ..
+
 mkdir data
 
 cd data
 
-mkdir raw && mkdir processed && cd raw
+mkdir raw && mkdir processed
+
+cd raw
 
 mkdir amazon_beauty && mkdir foursquare-tky
 
