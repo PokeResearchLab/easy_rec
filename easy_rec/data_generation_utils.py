@@ -89,8 +89,8 @@ def maybe_preprocess_raw_dataset(dataset_raw_folder, dataset_name):
         dataset_raw_folder (str): Path to the raw dataset folder.
         dataset_name (str): Name of the dataset.
     '''
-    print(os.path.isdir(dataset_raw_folder), all(os.path.isfile(os.path.join(dataset_raw_folder,filename)) for filename in get_rating_files_per_dataset(dataset_name)))
-    print(dataset_raw_folder, dataset_name)
+    #print(os.path.isdir(dataset_raw_folder), all(os.path.isfile(os.path.join(dataset_raw_folder,filename)) for filename in get_rating_files_per_dataset(dataset_name)))
+    #print(dataset_raw_folder, dataset_name)
     if os.path.isdir(dataset_raw_folder) and all(os.path.isfile(os.path.join(dataset_raw_folder,filename)) for filename in get_rating_files_per_dataset(dataset_name)):
         print('Ratings data already exists. Skip pre-processing')
         return
