@@ -1,6 +1,6 @@
 import torch
 
-class SASRec(torch.nn.Module):
+class SASRec2(torch.nn.Module):
 
     def __init__(self, 
                  num_items, 

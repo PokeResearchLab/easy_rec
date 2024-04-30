@@ -8,6 +8,7 @@ from .sequential.GRU4Rec import GRU4Rec
 # from NextItNet import NextItNet
 # from NRMS import NRMS
 from .sequential.SASRec import SASRec
+from .sequential.SASRec2 import SASRec2
 from .sequential.BERT4Rec import BERT4Rec
 from .sequential.NARM import NARM
 from .sequential.CORE import CORE
