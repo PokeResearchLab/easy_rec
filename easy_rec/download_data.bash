@@ -24,7 +24,9 @@ rm ml-1m.zip && rm ml-100k.zip
 
 cd amazon_beauty
 
-curl -o --insecure All_Beauty.json.gz https://datarepo.eng.ucsd.edu/mcauley_group/data/amazon_v2/categoryFiles/All_Beauty.json.gz
+curl -k -o All_Beauty.json.gz https://datarepo.eng.ucsd.edu/mcauley_group/data/amazon_v2/categoryFiles/All_Beauty.json.gz
+
+gzip -d All_Beauty.json.gz
 
 cd ..
 

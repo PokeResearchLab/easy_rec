@@ -45,10 +45,10 @@ class SASRec(torch.nn.Module):
         ''' 
     Input:
         input_seqs (torch.Tensor): Tensor containing input item sequences. Shape (batch_size, sequence_length).
-        poss_item_seqs (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, input_seq_len, output_seq_len, num_items)
+        poss_item_seqs (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, output_seq_len, num_items)
 
     Output:
-        scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, input_seq_len, output_seq_len, num_items)
+        scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, output_seq_len, num_items)
 
         '''
 

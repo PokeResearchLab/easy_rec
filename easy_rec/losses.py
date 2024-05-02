@@ -71,7 +71,7 @@ class SequentialBPR(torch.nn.Module):
 
         # Pair items in the same timestep
         item_per_relevance = (input * new_target)
-        sum_per_items = item_per_relevance.sum(dim=-1)
+        sum_per_items = item_per_relevance.sum(dim=-1) #TODO: change to separate sum of items
         
         bpr = torch.log(torch.sigmoid(sum_per_items)+self.eps)
 

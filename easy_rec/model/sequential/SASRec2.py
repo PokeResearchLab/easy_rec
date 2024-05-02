@@ -63,7 +63,7 @@ class SASRec2(torch.nn.Module):
 
         encoded = self.encoder(embedded, attention_mask)
 
-        log_feats = self.last_layernorm(encoded).unsqueeze(2)
+        log_feats = encoded.unsqueeze(2)
 
         poss_item_embs = self.item_emb(poss_item_seqs)
 
