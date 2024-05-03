@@ -289,7 +289,7 @@ class RecommendationSequentialCollator(SequentialCollator):
             raise NotImplementedError(f"Unsupported relevance: {relevance}")
 
         if mask_prob > 0 and mask_value is None:
-            mask_value = num_items
+            mask_value = num_items+1
         self.mask_value = mask_value
         self.mask_prob = mask_prob
 
@@ -342,7 +342,10 @@ class RecommendationSequentialCollator(SequentialCollator):
         if self.mask_prob == 0: return input
         mask = torch.rand(input.shape) < self.mask_prob
         if self.out_seq_len is not None:
-            mask[:,:-self.out_seq_len] = True #Always mask last item (for val / test purposes)
+            mask[:,-self.out_seq_len:] = True #Always mask last items (for val / test purposes)
+            mask[:,:-self.out_seq_len] = False #Never mask first items
+        input_is_padding = torch.isclose(input, self.padding_value*torch.ones_like(input))
+        mask[input_is_padding] = False
         input[mask] = self.mask_value
         return input
 
