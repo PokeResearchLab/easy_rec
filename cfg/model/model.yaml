@@ -4,7 +4,7 @@ optimizer:
   #   lr: 1.0e-3
   #   betas: [0.9, 0.98]
 
-loss: SequentialCrossEntropyLoss #SequentialBPR #SequentialBCEWithLogitsLoss
+loss: SequentialBCEWithLogitsLoss #SequentialCrossEntropyLoss #SequentialBPR #SequentialBCEWithLogitsLoss
 
 metrics:
   - Precision

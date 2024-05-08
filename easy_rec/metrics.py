@@ -51,8 +51,10 @@ class RecMetric(torchmetrics.Metric):
         if "relevance" in kwargs:
             # Subset other args, kwargs where relevance is not nan
             relevance = kwargs["relevance"]
-            is_not_nan_per_sample = ~torch.isnan(relevance).any(-1)
+            app = torch.isnan(relevance)
+            is_not_nan_per_sample = ~app.all(-1)
             kwargs = {k: v[is_not_nan_per_sample] for k, v in kwargs.items()}
+            kwargs["relevance"][app[is_not_nan_per_sample]] = 0
             # This keeps just the last dimension, the others are collapsed
 
         return kwargs
