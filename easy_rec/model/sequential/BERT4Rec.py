@@ -5,9 +5,9 @@ class BERT4Rec(torch.nn.Module):
                  num_items, 
                  emb_size, 
                  lookback, 
-                 bert_num_blocks, 
-                 bert_num_heads, 
-                 dropout_rate, 
+                 bert_num_blocks=1, 
+                 bert_num_heads=1, 
+                 dropout_rate=0, 
                  padding_value=0, 
                  **kwargs):
         '''
@@ -51,8 +51,9 @@ class BERT4Rec(torch.nn.Module):
             self.encoder.layers[0].self_attn.num_heads, input_seqs.shape[1], 1)
 
         # Generate positions tensor
-        positions = torch.tile(torch.arange(input_seqs.shape[1], device=next(self.parameters()).device),
-                                [input_seqs.shape[0], 1])
+        positions = torch.tile(torch.arange(input_seqs.shape[1],
+                                            device=next(self.parameters()).device),
+                                            [input_seqs.shape[0], 1])
 
         embedded = self.dropout(self.item_emb(input_seqs) + self.pos_emb(positions))
 

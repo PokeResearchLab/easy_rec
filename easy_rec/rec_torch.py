@@ -259,6 +259,7 @@ class RecommendationSequentialCollator(SequentialCollator):
                  num_items,
                  primary_key="sid",
                  relevance=None,
+                 normalize_relevance=False,
                  num_positives = 1,
                  num_negatives = 1,
                  mask_value = None,
@@ -277,6 +278,7 @@ class RecommendationSequentialCollator(SequentialCollator):
         self.num_negatives = num_negatives
 
         self.relevance = relevance
+        self.normalize_relevance = normalize_relevance
         # Set a relevance function based on the specified relevance type and data shape
         if relevance in {None, "fixed", "linear", "exponential"}:
             # Generate a relevance tensor based on the specified type and data shape
@@ -304,22 +306,24 @@ class RecommendationSequentialCollator(SequentialCollator):
 
         out[self.in_key] = self.mask_input(out[self.in_key])
 
-        out_is_padding = torch.isclose(out[self.out_key], self.padding_value*torch.ones_like(out[self.out_key])).all(-1) #.all(-1) for out because out can have multiple values, i.e. simultaneous_lookforward
+        out_is_padding = torch.isclose(out[self.out_key], self.padding_value*torch.ones_like(out[self.out_key]))
         not_to_use = out_is_padding
         if self.mask_value is not None:
             relevant_in = out[self.in_key][:, -out[self.out_key].shape[1]:]
             input_is_not_masking = torch.logical_not(torch.isclose(relevant_in, self.mask_value*torch.ones_like(relevant_in)))
-            not_to_use = torch.logical_or(not_to_use, input_is_not_masking)
+            not_to_use = torch.logical_or(not_to_use, input_is_not_masking.unsqueeze(-1))
 
-        negatives[out_is_padding] = self.padding_value # Pad negative if out (i.e. positives) is padding
-        
+        all_not_to_use = not_to_use.all(-1)
+
+        negatives[all_not_to_use] = self.padding_value # Pad negative if out (i.e. positives) is padding #.all(-1) for out because out can have multiple values, i.e. simultaneous_lookforward
         # Masked tensor are a prototype in torch, but could solve many issues with padding and not wanting to compute losses or metrics on padding
         #negatives = torch.masked.masked_tensor(negatives, out_is_padding.unsqueeze(-1))
 
         out[self.out_key] = torch.cat([out[self.out_key], negatives], dim=-1) #concatenate negatives to out[out_key]
         out["relevance"] = torch.cat([out["relevance"], torch.zeros_like(negatives)], dim=-1) #concatenate 0 relevance to relevance
 
-        out["relevance"][not_to_use] = float("nan") # Nan relevance if out is padding or input is not masked (if applicable)
+        out["relevance"][:,:,:not_to_use.shape[-1]][not_to_use] = float("nan") # Nan relevance if out is padding or input is not masked (if applicable)
+        out["relevance"][:,:,not_to_use.shape[-1]:][all_not_to_use] = float("nan") # Nan relevance if all out is padding
 
         # Return the modified out
         return out
@@ -367,7 +371,8 @@ class RecommendationSequentialCollator(SequentialCollator):
                 app = torch.exp(app)
 
         # Normalize the tensor
-        app /= torch.sum(app)
+        if self.normalize_relevance:
+            app /= torch.sum(app)
 
         # Repeat the tensor to match the shape
         app = app.repeat(*shape[:-1], 1)

@@ -6,22 +6,22 @@ class SASRec(torch.nn.Module):
                  num_items, 
                  lookback, 
                  emb_size, 
-                 dropout_rate, 
-                 num_blocks, 
-                 num_heads, 
+                 dropout_rate=0, 
+                 num_blocks=1, 
+                 num_heads=1, 
                  padding_value=0, 
                  **kwargs):
         '''
-    These are the parameters for the SASRec model, defined in the corresponding YAML file.
+        These are the parameters for the SASRec model, defined in the corresponding YAML file.
 
-    Args:
-        num_items (int): Number of items in the dataset.
-        lookback (int): Number of previous items to consider in the sequence. (length of the sequence)
-        emb_size (int): Size of the embedding for items and positions.
-        dropout_rate (float): Dropout rate for regularization.
-        num_blocks (int): Number of Transformer blocks in the encoder.
-        num_heads (int): Number of attention heads in the Transformer model.
-        padding_value (int, optional): Padding value for item embeddings. Defaults to 0.
+        Args:
+            num_items (int): Number of items in the dataset.
+            lookback (int): Number of previous items to consider in the sequence. (length of the sequence)
+            emb_size (int): Size of the embedding for items and positions.
+            dropout_rate (float): Dropout rate for regularization.
+            num_blocks (int): Number of Transformer blocks in the encoder.
+            num_heads (int): Number of attention heads in the Transformer model.
+            padding_value (int, optional): Padding value for item embeddings. Defaults to 0.
         '''
         super().__init__()
 
@@ -43,20 +43,23 @@ class SASRec(torch.nn.Module):
     def forward(self, input_seqs, poss_item_seqs):
 
         ''' 
-    Input:
-        input_seqs (torch.Tensor): Tensor containing input item sequences. Shape (batch_size, sequence_length).
-        poss_item_seqs (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, output_seq_len, num_items)
+        Input:
+            input_seqs (torch.Tensor): Tensor containing input item sequences. Shape (batch_size, sequence_length).
+            poss_item_seqs (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, output_seq_len, num_items)
 
-    Output:
-        scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, output_seq_len, num_items)
-
+        Output:
+            scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, output_seq_len, num_items)
         '''
 
-        positions = torch.tile(torch.arange(input_seqs.shape[1], device=next(self.parameters()).device), [input_seqs.shape[0], 1])
+        positions = torch.tile(torch.arange(input_seqs.shape[1],
+                                            device=next(self.parameters()).device),
+                                            [input_seqs.shape[0], 1])
 
         embedded = self.dropout(self.item_emb(input_seqs) + self.pos_emb(positions))
 
-        attention_mask = ~torch.tril(torch.ones((input_seqs.shape[1], input_seqs.shape[1]), dtype=torch.bool, device=next(self.parameters()).device))
+        attention_mask = ~torch.tril(torch.ones((input_seqs.shape[1], input_seqs.shape[1]),
+                                                dtype=torch.bool,
+                                                device=next(self.parameters()).device))
 
         encoded = self.encoder(embedded, attention_mask)
 

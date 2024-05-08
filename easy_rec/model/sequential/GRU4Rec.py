@@ -2,12 +2,12 @@ import torch
 
 class GRU4Rec(torch.nn.Module):
     def __init__(self, 
-                 num_items, 
+                 num_items,
+                 emb_size, 
                  hidden_size, 
                  num_layers=1,
                  dropout_hidden=0, 
-                 dropout_input=0, 
-                 emb_size=50, 
+                 dropout_input=0,
                  padding_value = 0,
                  **kwargs):
         '''
