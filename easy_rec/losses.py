@@ -70,20 +70,21 @@ class SequentialBPR(torch.nn.Module):
         new_target[~is_not_nan] = 0
 
         # Pair items in the same timestep
-        item_per_relevance = (input * new_target)
         positive_items = new_target > 0
         negative_items = new_target < 0
-        item_pairs = (positive_items.unsqueeze(-1) * negative_items.unsqueeze(-2)).float()
+        item_pairs = (negative_items.unsqueeze(-1) * positive_items.unsqueeze(-2)).float()
         # pair positive and negative items in same timestep
-        item_per_relevance = item_per_relevance.unsqueeze(-1) - item_per_relevance.unsqueeze(-2)
-        item_per_relevance = -torch.log(1+torch.exp(-item_per_relevance))
+        item_per_relevance = input.unsqueeze(-1) - input.unsqueeze(-2)
+        item_per_relevance = torch.log(1+torch.exp(item_per_relevance))
+        #print(item_per_relevance[0])
         # item_per_relevance has shape (N,T,I,I)
         # item_pairs has shape (N,T,I,I)
         # We want shape (N,T,1). summing on last two dimensions if item_pairs is True
         bpr = torch.einsum('ntij,ntij->nt', item_per_relevance, item_pairs)
+        #print(bpr[0])
 
         bpr = bpr[is_not_nan.any(dim=-1)]
-        
-        bpr = -bpr.mean()
+
+        bpr = bpr.mean()
 
         return bpr
