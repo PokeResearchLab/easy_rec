@@ -1,6 +1,6 @@
 from .sequential.Caser import Caser
 from .sequential.CosRec import CosRec
-from .sequential.Caser import Caser
+from .sequential.Caser import Caser2
 from .sequential.CosRec import CosRec
 from .sequential.HGN import HGN
 from .sequential.GRU4Rec import GRU4Rec

@@ -19,7 +19,7 @@ dataset_params:
 collator_params:
   sequential_keys: [sid] #timestamp, rating #the sequential keys of the dataset
   padding_value: 0 #the padding value for the dataset
-  lookback: 200 #30 #[20, 50, 100, 200] #the lookback of the dataset
+  lookback: 10 #200 #[20, 50, 100, 200] #the lookback of the dataset
   lookforward: 1 #3 #the lookforward of the dataset
   simultaneous_lookforward: 1 #the simultaneous lookforward of the dataset
   out_seq_len: # Number of predictions to keep (i.e. not masked as padding) --> to avoid train/test leakage

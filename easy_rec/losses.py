@@ -51,10 +51,11 @@ class SequentialBCEWithLogitsLoss(torch.nn.BCEWithLogitsLoss):
 #         # output = super().forward(input, target)
 
 #         return output
-    
+
 class SequentialBPR(torch.nn.Module):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, clamp_max=20,*args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.clamp_max = clamp_max
 
     def forward(self, input, target):
         # Input shape: (batch_size, timesteps, num_items)
@@ -71,7 +72,7 @@ class SequentialBPR(torch.nn.Module):
         item_pairs = (negative_items.unsqueeze(-1) * positive_items.unsqueeze(-2)).float()
         
         item_per_relevance = input.unsqueeze(-1) - input.unsqueeze(-2)
-        item_per_relevance = torch.log(1+torch.exp(item_per_relevance))
+        item_per_relevance = torch.log(1+torch.exp(torch.clamp(item_per_relevance, max=self.clamp_max)))
 
         # item_per_relevance has shape (N,T,I,I)
         # item_pairs has shape (N,T,I,I)

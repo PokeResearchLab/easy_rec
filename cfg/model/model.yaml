@@ -4,7 +4,12 @@ optimizer:
   #   lr: 1.0e-3
   #   betas: [0.9, 0.98]
 
-loss: SequentialBPR #SequentialCrossEntropyLoss #SequentialBPR #SequentialBCEWithLogitsLoss
+loss: SequentialBCEWithLogitsLoss #SequentialCrossEntropyLoss #SequentialBPR #SequentialBCEWithLogitsLoss
+# loss:
+#   gbce_loss:
+#     name: SequentialGeneralizedBCEWithLogitsLoss
+#     params:
+#       beta: 0.5
 
 metrics:
   - Precision
@@ -19,6 +24,9 @@ log_params:
   on_step: False
 
 /step_routing:
+  model_input_from_batch: ["in_sid", "out_sid"]
+  loss_input_from_model_output:
+    input: null
   loss_input_from_batch:
     target: relevance
   metrics_input_from_batch:
@@ -56,4 +64,4 @@ log_params:
 
 +flops_profiler: flops_profiler_cfg
 
-+rec_model: SASRec
++rec_model: Caser2
