@@ -64,4 +64,4 @@ log_params:
 
 +flops_profiler: flops_profiler_cfg
 
-+rec_model: Caser2
++rec_model: CosRec

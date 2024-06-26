@@ -23,7 +23,7 @@ class CosRec(torch.nn.Module):
         self.in_item_embeddings = torch.nn.Embedding(num_items+1, emb_size)
 
         ### build cnnBlock
-        block_dims.insert(0, 2*emb_size)
+        block_dims.insert(0, 2*emb_size) #add input dimension
         cnn_blocks = []
         for i in range(len(block_dims)-1):
             cnn_blocks.append(CnnBlock(block_dims[i], block_dims[i+1]))
@@ -63,7 +63,10 @@ class CosRec(torch.nn.Module):
         # 2D CNN
         for cnn in self.cnn_blocks:
             out = cnn(out)
-        out = self.avgpool(out).squeeze(-1).squeeze(-1) #.reshape(item_seq.shape[0], self.cnnout_dim) #block_dim[-1]
+        print("pre",out.shape)
+        out = self.avgpool(out)#.squeeze(-1).squeeze(-1) #.reshape(item_seq.shape[0], self.cnnout_dim) #block_dim[-1]
+        print("post",out.shape)
+        print(sakjasnasj)
 
         # apply fc and dropout
         out = self.dropout(self.act_fc(self.fc1(out)))

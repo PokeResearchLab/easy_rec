@@ -264,6 +264,7 @@ class RecommendationSequentialCollator(SequentialCollator):
                  num_negatives = 1,
                  mask_value = None,
                  mask_prob = 0,
+                 negatives_distribution = "uniform",
                  *args,**kwargs): #out_seq_len and padding_value are set by super().__init__
         
         super().__init__(*args,**kwargs)
@@ -276,6 +277,14 @@ class RecommendationSequentialCollator(SequentialCollator):
         # Set the number of positives and negatives
         self.num_positives = num_positives
         self.num_negatives = num_negatives
+
+        if negatives_distribution not in {"uniform"} and not isinstance(negatives_distribution, torch.Tensor):
+            raise NotImplementedError(f"Unsupported negatives_distribution: {negatives_distribution}")
+        self.negatives_distribution = negatives_distribution
+        if self.negatives_distribution == "uniform":
+            self.sample_from_negative_distribution = self.uniform_negatives
+        elif isinstance(negatives_distribution, torch.Tensor):
+            self.sample_from_negative_distribution = self.distr_negatives
 
         self.relevance = relevance
         self.normalize_relevance = normalize_relevance
@@ -327,6 +336,13 @@ class RecommendationSequentialCollator(SequentialCollator):
 
         # Return the modified out
         return out
+    
+    def uniform_negatives(self, possible_negatives, n):
+        return possible_negatives[torch.randint(0, len(possible_negatives), (n,))]
+    
+    def distr_negatives(self, possible_negatives, n):
+        distr = self.negatives_distribution[possible_negatives]
+        return possible_negatives[torch.multinomial(distr, n)]
 
     # Method to sample negative items for a given set of indices
     def sample_negatives(self, original_sequences, t=1):
@@ -337,7 +353,7 @@ class RecommendationSequentialCollator(SequentialCollator):
             # Get possible negative items that are not in the original sequence
             possible_negatives = torch.tensor(list(set(range(1, self.num_items + 1)).difference(orig_seq))) #-1 is needed because index starts from 1
             # Randomly sample num_negatives negative items
-            negatives[i] = possible_negatives[torch.randint(0, len(possible_negatives), (self.num_negatives*t,))]
+            negatives[i] = self.sample_from_negative_distribution(possible_negatives, self.num_negatives*t)
             #negatives[i] = possible_negatives[torch.randperm(len(possible_negatives))[:self.num_negatives*t]]
         negatives = negatives.reshape(len(original_sequences), t, max(self.num_negatives,1))
         return negatives

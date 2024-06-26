@@ -492,7 +492,22 @@ def transform_to_graph(data, keys=["uid", "sid"], max_ids=None): #TODO DELETE BE
 
     #return edge_index
     
+def get_popularity_items(data: dict, num_items: int) -> torch.Tensor:
+    popularity = {}
+    for sample in data:
+        for i in sample["sid"]:
+            popularity[i] = popularity.get(i,0) + 1
+    popularity_tensor = torch.zeros(num_items + 1, dtype=torch.float16)
     
+    for key in popularity:
+        popularity_tensor[key] = popularity[key]
+    
+    return popularity_tensor
+
+
+
+
+
 
 
 # input: data DictSequentialDataset
@@ -627,3 +642,6 @@ def load_user_info(dataset_raw_folder, dataset_name): #Is it really needed?
         raise NotImplementedError
     return df
 '''
+
+
+    
