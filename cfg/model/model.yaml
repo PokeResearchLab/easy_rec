@@ -64,4 +64,7 @@ log_params:
 
 +flops_profiler: flops_profiler_cfg
 
-+rec_model: CosRec
++rec_model: SASRec #CosRec
+
+__global__:
+  model.rec_model.seed: 43

@@ -307,6 +307,11 @@ class RecommendationSequentialCollator(SequentialCollator):
     def __call__(self, batch):
         out = super().__call__(batch)
 
+        out = self.rec_specific_call(out)
+        
+        return out # Return the modified out
+    
+    def rec_specific_call(self, out):
         out["relevance"] = self.relevance_function(out) # Add relevance scores to out
 
         # Add negative samples to the out
@@ -334,7 +339,6 @@ class RecommendationSequentialCollator(SequentialCollator):
         out["relevance"][:,:,:not_to_use.shape[-1]][not_to_use] = float("nan") # Nan relevance if out is padding or input is not masked (if applicable)
         out["relevance"][:,:,not_to_use.shape[-1]:][all_not_to_use] = float("nan") # Nan relevance if all out is padding
 
-        # Return the modified out
         return out
     
     def uniform_negatives(self, possible_negatives, n):
@@ -342,14 +346,15 @@ class RecommendationSequentialCollator(SequentialCollator):
     
     def distr_negatives(self, possible_negatives, n):
         distr = self.negatives_distribution[possible_negatives]
-        return possible_negatives[torch.multinomial(distr, n)]
+        repl = True if len(possible_negatives) < n else True
+        return possible_negatives[torch.multinomial(distr, n, replacement=repl)]
 
     # Method to sample negative items for a given set of indices
     def sample_negatives(self, original_sequences, t=1):
         if self.num_negatives == 0:
             return torch.zeros(len(original_sequences), t, self.num_negatives, dtype=torch.long)
         negatives = torch.zeros(len(original_sequences), self.num_negatives*t, dtype=torch.long)
-        for i, orig_seq in enumerate(original_sequences):
+        for i, orig_seq in enumerate(original_sequences): #TODO: parallelize this
             # Get possible negative items that are not in the original sequence
             possible_negatives = torch.tensor(list(set(range(1, self.num_items + 1)).difference(orig_seq))) #-1 is needed because index starts from 1
             # Randomly sample num_negatives negative items
@@ -443,6 +448,7 @@ def prepare_rec_collators(data,
                          split_keys = ["train", "val", "test"],
                          original_seq_id="uid",
                          original_seq_key="sid",
+                         collator_class = RecommendationSequentialCollator,
                          **collator_params):
     """
     Prepare recommendation data collators for training and evaluation.
@@ -477,7 +483,7 @@ def prepare_rec_collators(data,
         # original_seq = {k:v for k,v in zip(data[orig_seq_id],data[orig_seq_key])}
 
         # Create the DataCollator
-        collators[split_name] = RecommendationSequentialCollator(**split_collator_params)
+        collators[split_name] = collator_class(**split_collator_params)
 
     return collators
 
