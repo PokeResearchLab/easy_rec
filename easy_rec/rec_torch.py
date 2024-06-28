@@ -307,11 +307,6 @@ class RecommendationSequentialCollator(SequentialCollator):
     def __call__(self, batch):
         out = super().__call__(batch)
 
-        out = self.rec_specific_call(out)
-        
-        return out # Return the modified out
-    
-    def rec_specific_call(self, out):
         out["relevance"] = self.relevance_function(out) # Add relevance scores to out
 
         # Add negative samples to the out
