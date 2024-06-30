@@ -216,7 +216,7 @@ class SequentialCollator:
 
         #.int() floors the number, so max_len can't be selected (good, cause is out of bounds)
         # Generate random indices for output sequences
-        rand = (2**63 - 1)*torch.ones(len(seq_lens))
+        rand = torch.randint(2**63 - 1, size=(len(seq_lens),))
         current_index = (rand % (input_poss_end_ids - input_poss_start_ids) + input_poss_start_ids).int()
         
         if (current_index < 0).any():

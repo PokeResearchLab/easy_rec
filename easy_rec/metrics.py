@@ -34,7 +34,7 @@ class RecMetric(torchmetrics.Metric):
         # Compute accuracy as the ratio of correct predictions to total examples
         out = {}
         for k in self.top_k:
-            out[f"@{k}"] = getattr(self, f"correct@{k}") 
+            out[f"@{k}"] = getattr(self, f"correct@{k}")
             if not self.batch_metric:
                 out[f"@{k}"] = out[f"@{k}"] / self.total
             else:
@@ -59,6 +59,193 @@ class RecMetric(torchmetrics.Metric):
 
         return kwargs
     
+class RLS_Jaccard(RecMetric):
+    '''
+     ...
+    '''
+    def __init__(self, rbo_p=0.9, top_k=[5,10,20], batch_metric=False):
+        super().__init__(top_k, batch_metric)
+        self.batch_metric=batch_metric
+        self.rbo_p = rbo_p
+
+    def update(self, scores: torch.Tensor, relevance: torch.Tensor):
+        """
+        Updates the metric values based on the input scores and relevance tensors.
+
+        Args:
+            scores (torch.Tensor): Tensor containing prediction scores.
+            other_scores (torch.Tensor): Tensor containing other prediction scores.
+            relevance (torch.Tensor): Tensor containing relevance values.
+        """
+
+        #!!!!!CHANGE!!!!!
+        other_scores = scores[torch.arange(scores.shape[0]-1,-1,-1)]
+
+        # Call not_nan_subset to subset scores, relevance where relevance is not nan
+        kwargs = self.not_nan_subset(scores=scores, other_scores=other_scores, relevance=relevance)
+        scores, other_scores, relevance = kwargs["scores"], kwargs["other_scores"], kwargs["relevance"]
+        
+        # Update values
+        ordered_items = scores.argsort(dim=-1, descending=True)
+        ranks = ordered_items.argsort(dim=-1)+1
+        other_ordered_items = other_scores.argsort(dim=-1, descending=True)
+        other_ranks = other_ordered_items.argsort(dim=-1)+1
+        
+        for top_k in self.top_k:
+            app1, app2 = ranks<=top_k, other_ranks<=top_k
+            intersection_size = torch.logical_and(app1, app2).sum(-1)
+            union_size = torch.logical_or(app1, app2).sum(-1)
+            jaccard_sim = intersection_size/union_size
+            if not self.batch_metric:
+                setattr(self, f"correct@{top_k}", getattr(self, f"correct@{top_k}") + jaccard_sim.sum())
+            else:
+                getattr(self, f"correct@{top_k}").append(jaccard_sim)
+        
+        if not self.batch_metric:
+            self.total += relevance.shape[0]
+
+class RLS_RBO(RecMetric):
+    '''
+     TODO:...
+    '''
+    def __init__(self, rbo_p=0.9, top_k=[5,10,20], batch_metric=False):
+        super().__init__(top_k, batch_metric)
+        self.batch_metric=batch_metric
+        self.rbo_p = rbo_p
+
+    def update(self, scores: torch.Tensor, relevance: torch.Tensor):
+        """
+        Updates the metric values based on the input scores and relevance tensors.
+
+        Args:
+            scores (torch.Tensor): Tensor containing prediction scores.
+            other_scores (torch.Tensor): Tensor containing other prediction scores.
+            relevance (torch.Tensor): Tensor containing relevance values.
+        """
+
+        #!!!!!CHANGE!!!!!
+        other_scores = scores[torch.arange(scores.shape[0]-1,-1,-1)]
+
+        # Call not_nan_subset to subset scores, relevance where relevance is not nan
+        kwargs = self.not_nan_subset(scores=scores, other_scores=other_scores, relevance=relevance)
+        scores, other_scores, relevance = kwargs["scores"], kwargs["other_scores"], kwargs["relevance"]
+        
+        # Update values
+        ordered_items = scores.argsort(dim=-1, descending=True)
+        ranks = ordered_items.argsort(dim=-1)+1
+        other_ordered_items = other_scores.argsort(dim=-1, descending=True)
+        other_ranks = other_ordered_items.argsort(dim=-1)+1
+        
+        intersection_sizes_sum = torch.zeros(ranks.shape[0], device=relevance.device, dtype=torch.float32)
+        for top_k in range(1,max(self.top_k)+1):
+            app1, app2 = ranks<=top_k, other_ranks<=top_k
+            intersection_size = torch.logical_and(app1, app2).sum(-1)
+            intersection_sizes_sum += (self.rbo_p**(top_k-1))*intersection_size/top_k
+            if top_k in self.top_k:
+                rbo = (1-self.rbo_p)*intersection_sizes_sum
+                if not self.batch_metric:
+                    setattr(self, f"correct@{top_k}", getattr(self, f"correct@{top_k}") + rbo.sum())
+                else:
+                    getattr(self, f"correct@{top_k}").append(rbo)
+        
+        if not self.batch_metric:
+            self.total += relevance.shape[0]
+
+class RLS_FRBO(RecMetric):
+    '''
+     ...
+    '''
+    def __init__(self, rbo_p=0.9, top_k=[5,10,20], batch_metric=False):
+        super().__init__(top_k, batch_metric)
+        self.batch_metric=batch_metric
+        self.rbo_p = rbo_p
+
+    def update(self, scores: torch.Tensor, relevance: torch.Tensor):
+        """
+        Updates the metric values based on the input scores and relevance tensors.
+
+        Args:
+            scores (torch.Tensor): Tensor containing prediction scores.
+            other_scores (torch.Tensor): Tensor containing other prediction scores.
+            relevance (torch.Tensor): Tensor containing relevance values.
+        """
+
+        #!!!!!CHANGE!!!!!
+        other_scores = scores[torch.arange(scores.shape[0]-1,-1,-1)]
+
+        # Call not_nan_subset to subset scores, relevance where relevance is not nan
+        kwargs = self.not_nan_subset(scores=scores, other_scores=other_scores, relevance=relevance)
+        scores, other_scores, relevance = kwargs["scores"], kwargs["other_scores"], kwargs["relevance"]
+        
+        # Update values
+        ordered_items = scores.argsort(dim=-1, descending=True)
+        ranks = ordered_items.argsort(dim=-1)+1
+        other_ordered_items = other_scores.argsort(dim=-1, descending=True)
+        other_ranks = other_ordered_items.argsort(dim=-1)+1
+        
+        intersection_sizes_sum = torch.zeros(ranks.shape[0], device=relevance.device, dtype=torch.float32)
+        for top_k in range(1,max(self.top_k)+1):
+            app1, app2 = ranks<=top_k, other_ranks<=top_k
+            intersection_size = torch.logical_and(app1, app2).sum(-1)
+            intersection_sizes_sum += (self.rbo_p**(top_k-1))*intersection_size/top_k
+            if top_k in self.top_k:
+                frbo = (1-self.rbo_p)/(1-(self.rbo_p**top_k))*intersection_sizes_sum
+                if not self.batch_metric:
+                    setattr(self, f"correct@{top_k}", getattr(self, f"correct@{top_k}") + frbo.sum())
+                else:
+                    getattr(self, f"correct@{top_k}").append(frbo)
+        
+        if not self.batch_metric:
+            self.total += relevance.shape[0]
+
+# def compute_rls_metrics(preds1, preds2, metrics_at=np.array([1,5,10,20,50]), rbo_p=0.9):
+#     """
+#     Compute Rank-Biased Overlap (RBO) and Jaccard similarity metrics for ranked lists.
+
+#     Args:
+#     - preds1 (list): List of ranked predictions (e.g., recommendations).
+#     - preds2 (list): List of ranked predictions for comparison.
+#     - metrics_at (numpy array, optional): Positions at which metrics are computed. Default is [1, 5, 10, 20, 50].
+#     - rbo_p (float, optional): Parameter controlling the weight decay in RBO. Default is 0.9.
+
+#     Returns:
+#     - dict: A dictionary containing RBO and Jaccard metrics at specified positions.
+#     """
+#     # Initialize arrays to store RBO and Jaccard scores at specified positions
+#     rls_rbo = np.zeros((len(metrics_at)))
+#     rls_jac = np.zeros((len(metrics_at)))
+
+#     for pred1,pred2 in zip(preds1,preds2):
+#         j = 0
+#         rbo_sum = 0
+#         for d in range(1,min(min(len(pred1),len(pred2)),max(metrics_at))+1):
+#             # Create sets of the first d elements from the two ranked lists
+#             set_pred1, set_pred2 = set(pred1[:d]), set(pred2[:d])
+            
+#             # Calculate the intersection cardinality of the sets
+#             inters_card = len(set_pred1.intersection(set_pred2))
+
+#             # Update RBO sum using the formula
+#             rbo_sum += rbo_p**(d-1)*inters_card/d
+#             if d==metrics_at[j]:
+#                 # Update RBO and Jaccard scores at the specified position
+#                 rls_rbo[j] += (1-rbo_p)*rbo_sum/(1-rbo_p**d)
+                        
+#                 rls_jac[j] += inters_card/len(set_pred1.union(set_pred2))
+#                 # Move to the next specified position
+#                 j+=1
+#         #Check if it has stopped before cause pred1 or pred2 are shorter
+#         if j!=len(metrics_at):
+#             for k in range(j,len(metrics_at)):
+#                 rls_rbo[k] += (1-rbo_p)*rbo_sum
+#                 rls_jac[k] += inters_card/len(set_pred1.union(set_pred2))
+#     # Create dictionaries with specified positions as keys and normalized scores            
+#     rbo_dict = {"@"+str(k):rls_rbo[i]/len(preds1) for i,k in enumerate(metrics_at)}
+#     jac_dict = {"@"+str(k):rls_jac[i]/len(preds1) for i,k in enumerate(metrics_at)}
+#     # Return a dictionary containing RBO and Jaccard results
+#     return {"RLS_RBO":rbo_dict, "RLS_JAC":jac_dict}
+
+    
 class NDCG(RecMetric):
     '''
      Normalized Discounted Cumulative Gain (NDCG) assesses the performance of a ranking system by considering the placement of K relevant items 
@@ -77,7 +264,7 @@ class NDCG(RecMetric):
             scores (torch.Tensor): Tensor containing prediction scores.
             relevance (torch.Tensor): Tensor containing relevance values.
 
-     """
+        """
         # Call not_nan_subset to subset scores, relevance where relevance is not nan
         kwargs = self.not_nan_subset(scores=scores, relevance=relevance)
         scores, relevance = kwargs["scores"], kwargs["relevance"]
@@ -216,7 +403,7 @@ class F1(RecMetric):
             out[f"@{k}"] = 2*(precision[f"@{k}"]*recall[f"@{k}"])/(precision[f"@{k}"]+recall[f"@{k}"])
         return out
 
-class PrecisionWithRelevance(RecMetric): #TODO CHE ROBA è?
+class PrecisionWithRelevance(RecMetric):
     '''
     It computes the proportion of accurately identified relevant items among all the items recommended within a list of length K.
     It is used to explicitly count the number of recommended, or retrieved, items that are truly relevant.
@@ -281,4 +468,3 @@ class MAP(RecMetric):
     def reset(self):
         super().reset()
         self.precision_at_k.reset()
-

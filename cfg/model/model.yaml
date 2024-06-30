@@ -18,6 +18,9 @@ metrics:
   - MAP
   - NDCG
   - MRR
+  - RLS_Jaccard
+  - RLS_RBO
+  - RLS_FRBO 
 
 log_params:
   on_epoch: True
@@ -42,6 +45,12 @@ log_params:
       relevance: relevance
     MRR:
       relevance: relevance
+    RLS_Jaccard:
+      relevance: relevance
+    RLS_RBO:
+      relevance: relevance
+    RLS_FRBO:
+      relevance: relevance
   metrics_input_from_model_output:
     Precision:
       scores: null
@@ -54,6 +63,12 @@ log_params:
     NDCG:
       scores: null
     MRR:
+      scores: null
+    RLS_Jaccard:
+      scores: null
+    RLS_RBO:
+      scores: null
+    RLS_FRBO:
       scores: null
 
 +loader_params: loader_params_cfg
