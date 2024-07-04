@@ -220,10 +220,9 @@ class SpecialPooling(torch.nn.Module):
     
     def forward(self, x):
         # x shape (B, e, L, L)
-        print("x", x.shape)
         L = x.shape[-1]
         mask = self.create_mask(L, x.device)
-        out = torch.einsum("nejk,tjk->nte", x, mask)/(torch.arange(1,L+1).float()[:,None])**2
+        out = torch.einsum("nejk,tjk->nte", x, mask)/(torch.arange(1,L+1,device=x.device).float()[:,None])**2
         return out
 
     def create_mask(self, L, device="cpu"):

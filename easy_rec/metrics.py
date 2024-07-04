@@ -68,7 +68,7 @@ class RLS_Jaccard(RecMetric):
         self.batch_metric=batch_metric
         self.rbo_p = rbo_p
 
-    def update(self, scores: torch.Tensor, relevance: torch.Tensor):
+    def update(self, scores: torch.Tensor, other_scores: torch.Tensor, relevance: torch.Tensor):
         """
         Updates the metric values based on the input scores and relevance tensors.
 
@@ -77,9 +77,6 @@ class RLS_Jaccard(RecMetric):
             other_scores (torch.Tensor): Tensor containing other prediction scores.
             relevance (torch.Tensor): Tensor containing relevance values.
         """
-
-        #!!!!!CHANGE!!!!!
-        other_scores = scores[torch.arange(scores.shape[0]-1,-1,-1)]
 
         # Call not_nan_subset to subset scores, relevance where relevance is not nan
         kwargs = self.not_nan_subset(scores=scores, other_scores=other_scores, relevance=relevance)
@@ -113,7 +110,7 @@ class RLS_RBO(RecMetric):
         self.batch_metric=batch_metric
         self.rbo_p = rbo_p
 
-    def update(self, scores: torch.Tensor, relevance: torch.Tensor):
+    def update(self, scores: torch.Tensor, other_scores: torch.Tensor, relevance: torch.Tensor):
         """
         Updates the metric values based on the input scores and relevance tensors.
 
@@ -122,9 +119,6 @@ class RLS_RBO(RecMetric):
             other_scores (torch.Tensor): Tensor containing other prediction scores.
             relevance (torch.Tensor): Tensor containing relevance values.
         """
-
-        #!!!!!CHANGE!!!!!
-        other_scores = scores[torch.arange(scores.shape[0]-1,-1,-1)]
 
         # Call not_nan_subset to subset scores, relevance where relevance is not nan
         kwargs = self.not_nan_subset(scores=scores, other_scores=other_scores, relevance=relevance)
@@ -160,7 +154,7 @@ class RLS_FRBO(RecMetric):
         self.batch_metric=batch_metric
         self.rbo_p = rbo_p
 
-    def update(self, scores: torch.Tensor, relevance: torch.Tensor):
+    def update(self, scores: torch.Tensor,  other_scores: torch.Tensor, relevance: torch.Tensor):
         """
         Updates the metric values based on the input scores and relevance tensors.
 
@@ -169,9 +163,6 @@ class RLS_FRBO(RecMetric):
             other_scores (torch.Tensor): Tensor containing other prediction scores.
             relevance (torch.Tensor): Tensor containing relevance values.
         """
-
-        #!!!!!CHANGE!!!!!
-        other_scores = scores[torch.arange(scores.shape[0]-1,-1,-1)]
 
         # Call not_nan_subset to subset scores, relevance where relevance is not nan
         kwargs = self.not_nan_subset(scores=scores, other_scores=other_scores, relevance=relevance)
