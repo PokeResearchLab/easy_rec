@@ -95,7 +95,7 @@ class RLS_Jaccard(RecMetric):
             app1, app2 = ranks<=top_k, other_ranks<=top_k
             intersection_size = torch.logical_and(app1, app2).sum(-1)
             union_size = torch.logical_or(app1, app2).sum(-1)
-            jaccard_sim = intersection_size/union_size
+            jaccard_sim = intersection_size.float()/union_size
             if not self.batch_metric:
                 setattr(self, f"correct@{top_k}", getattr(self, f"correct@{top_k}") + jaccard_sim.sum())
             else:
@@ -429,7 +429,7 @@ class PrecisionWithRelevance(RecMetric):
                 getattr(self, f"correct@{top_k}").append(precision)
 
         if not self.batch_metric:
-            self.total += relevance.shape[0]
+            self.total = self.total + relevance.shape[0] #not using += cause getting InferenceMode error sometimes
 
 class MAP(RecMetric):
     '''

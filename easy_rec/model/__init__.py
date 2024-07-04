@@ -1,14 +1,11 @@
-from .sequential.Caser import Caser
-from .sequential.CosRec import CosRec
-from .sequential.Caser import Caser2
-from .sequential.CosRec import CosRec
+from .sequential.Caser import Caser, Caser2
+from .sequential.CosRec import CosRec, CosRec2
 from .sequential.HGN import HGN
 from .sequential.GRU4Rec import GRU4Rec
 # from NARM import NARM
 # from NextItNet import NextItNet
 # from NRMS import NRMS
-from .sequential.SASRec import SASRec
-from .sequential.SASRec2 import SASRec2
+from .sequential.SASRec import SASRec, SASRec2
 from .sequential.BERT4Rec import BERT4Rec
 from .sequential.NARM import NARM
 from .sequential.CORE import CORE
