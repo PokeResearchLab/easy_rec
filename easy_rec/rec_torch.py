@@ -336,10 +336,10 @@ class RecommendationSequentialCollator(SequentialCollator):
 
         return out
     
-    def uniform_negatives(self, possible_negatives, n):
+    def uniform_negatives(self, possible_negatives, n, i):
         return possible_negatives[torch.randint(0, len(possible_negatives), (n,))]
     
-    def distr_negatives(self, possible_negatives, n):
+    def distr_negatives(self, possible_negatives, n, i):
         distr = self.negatives_distribution[possible_negatives]
         repl = True if len(possible_negatives) < n else True
         return possible_negatives[torch.multinomial(distr, n, replacement=repl)]
@@ -353,7 +353,7 @@ class RecommendationSequentialCollator(SequentialCollator):
             # Get possible negative items that are not in the original sequence
             possible_negatives = torch.tensor(list(set(range(1, self.num_items + 1)).difference(orig_seq))) #-1 is needed because index starts from 1
             # Randomly sample num_negatives negative items
-            negatives[i] = self.sample_from_negative_distribution(possible_negatives, self.num_negatives*t)
+            negatives[i] = self.sample_from_negative_distribution(possible_negatives, self.num_negatives*t, i)
             #negatives[i] = possible_negatives[torch.randperm(len(possible_negatives))[:self.num_negatives*t]]
         negatives = negatives.reshape(len(original_sequences), t, max(self.num_negatives,1))
         return negatives

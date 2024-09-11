@@ -60,7 +60,7 @@ class Caser(torch.nn.Module):
         # Horizontal conv layer
         out_hs = torch.empty((len(self.conv_h),item_embs.shape[0],self.num_hor_filters,1), device=item_embs.device)
         for i,conv in enumerate(self.conv_h):
-            conv_out = self.act_conv(conv(item_embs)) #(N, num_hor_filters, h, 1) #h \in {1,2,...,lookback}
+            conv_out = self.act_conv(conv(item_embs)) #(N, num_hor_filters, lookback-h+1, 1) #h \in {1,2,...,lookback}
             out_hs[i] = conv_out.max(2).values #(N, num_hor_filters, 1)
         out_h = out_hs.permute(1,0,2,3).reshape(item_embs.shape[0],self.fc1_dim_h) #(N, num_hor_filters*lookback)
 
@@ -139,7 +139,7 @@ class Caser2(torch.nn.Module):
 
         # Vertical conv layer
         # To keep shape L, we need to pad the input sequence
-        pad_item_embs = torch.nn.functional.pad(item_embs, (0, 0, lookback-1, 0)) #(N, 1, L+L, emb_size)
+        pad_item_embs = torch.nn.functional.pad(item_embs, (0, 0, lookback-1, 0)) #(N, 1, L+L-1, emb_size)
         out_v = self.conv_v(pad_item_embs) #(N, num_ver_filters, L, emb_size)
         
         # Reshape (N, num_ver_filters, L, emb_size) to (N, L, num_ver_filters, self.fc1_dim_v)
@@ -149,8 +149,8 @@ class Caser2(torch.nn.Module):
         out_hs = torch.empty((len(self.conv_h),item_embs.shape[0],self.num_hor_filters,lookback,1), device=item_embs.device)
         for h,conv in enumerate(self.conv_h):
             pad_item_embs = torch.nn.functional.pad(item_embs, (0, 0, h, 0)) #(N, 1, L+h, emb_size)
-            conv_out = self.act_conv(conv(pad_item_embs)) #(N, num_hor_filters, h, 1) #h \in {1,2,...,lookback}
-            out_hs[h] = conv_out.cummax(2).values #(N, num_hor_filters, 1)
+            conv_out = self.act_conv(conv(pad_item_embs)) #(N, num_hor_filters, L, 1) #h \in {1,2,...,lookback}
+            out_hs[h] = conv_out.cummax(2).values #(N, num_hor_filters, L, 1)
         # Reshape to (N, L, num_hor_filters*lookback)
         out_h = out_hs.permute(1,3,2,4,0).reshape(item_embs.shape[0],lookback,self.fc1_dim_h)
 

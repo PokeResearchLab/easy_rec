@@ -4,7 +4,7 @@
 
 #EXPERIMENT PARAMETERS - NOT SAVED AS PART OF THE CONFIGURATION
 __exp__:
-    name: prova
+    name: prova_hpt
     #+wandb: wandb #Emb_size_beauty #27_1_lookback_ml-1m #provaCaser #name of the experiment, optional, default = "experiment_name"
     # project_folder: ../ #project folder, used to locate folders, optional, default = "../"
     # key_len: 16 #Length of experiment key, optional, default = 16

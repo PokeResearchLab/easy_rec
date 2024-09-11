@@ -23,6 +23,7 @@ class CosRec(torch.nn.Module):
         self.in_item_embeddings = torch.nn.Embedding(num_items+1, emb_size)
 
         ### build cnnBlock
+        block_dims = block_dims.copy()
         block_dims.insert(0, 2*emb_size) #add input dimension
         cnn_blocks = []
         for i in range(len(block_dims)-1):
@@ -130,6 +131,7 @@ class CosRec2(torch.nn.Module):
         self.in_item_embeddings = torch.nn.Embedding(num_items+1, emb_size)
 
         ### build cnnBlock
+        block_dims = block_dims.copy()
         block_dims.insert(0, 2*emb_size) #add input dimension
         cnn_blocks = []
         for i in range(len(block_dims)-1):
@@ -226,8 +228,8 @@ class SpecialPooling(torch.nn.Module):
         return out
 
     def create_mask(self, L, device="cpu"):
-        app = torch.triu(torch.ones(L, L, dtype=int, device=device))
-        app = app[None,:]*app.T[:,None]
-        app = app + app.transpose(1,2)
-        app = 1*(app>0).float()
-        return app
+        x = torch.triu(torch.ones(L, L, dtype=int, device=device))
+        x = x[None,:]*x.T[:,None]
+        x = x + x.transpose(1,2)
+        x = 1*(x>0).float()
+        return x

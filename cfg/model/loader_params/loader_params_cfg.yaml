@@ -1,5 +1,5 @@
 batch_size: 128 #2048
-num_workers: 1
+/num_workers: 1
 # shuffle: True
-persistent_workers: False
-pin_memory: False
+/persistent_workers: False
+/pin_memory: False

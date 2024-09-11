@@ -126,12 +126,16 @@ def get_rating_files_per_dataset(dataset_name):
         return ['CDs_and_Vinyl.csv']
     elif dataset_name == "amazon_music":
         return ['Digital_Music.csv']
+    elif dataset_name == "amazon_books":
+        return ['Books.csv']
     elif dataset_name == "foursquare-nyc":
         return ['dataset_TSMC2014_NYC.txt']
     elif dataset_name == "foursquare-tky":
         return ['dataset_TSMC2014_TKY.txt']
     elif dataset_name == "behance":
         return ['behance.csv']
+    elif dataset_name == "yelp":
+        return ['yelp.csv']
     else:
         raise NotImplementedError
 
@@ -175,7 +179,32 @@ def specific_preprocess(dataset_raw_folder, dataset_name):
         # Convert the processed data to a DataFrame and save it as a CSV file
         all_reviews = pd.DataFrame(all_reviews)
         all_reviews.to_csv(os.path.join(dataset_raw_folder, 'steam.csv'), header=False, index=False)
-    
+    elif dataset_name == "yelp":
+        # File path for the Yelp dataset
+        file_path = os.path.join(dataset_raw_folder, 'yelp_academic_dataset_review.json')
+        all_reviews = []
+        # Read and process each line in the file
+        with open(file_path, "r") as f:
+            for line in f:
+                # Convert each line to a dictionary using literal_eval
+                line_dict = literal_eval(line)
+                user_id = line_dict['user_id']
+                # Extract relevant information from each review
+                item_id = line_dict['business_id']
+                rating = line_dict['stars']
+                timestamp = line_dict['date']
+                try:
+                    # Convert the timestamp to a Unix timestamp
+                    timestamp = datetime.datetime.timestamp(datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S"))
+                except ValueError:
+                    timestamp = -1
+                timestamp = int(timestamp)
+                
+                all_reviews.append((user_id, item_id, rating, timestamp))
+
+        # Convert the processed data to a DataFrame and save it as a CSV file
+        all_reviews = pd.DataFrame(all_reviews)
+        all_reviews.to_csv(os.path.join(dataset_raw_folder, 'yelp.csv'), header=False, index=False)
     elif dataset_name == "behance":
         file_path = os.path.join(dataset_raw_folder, 'behance.txt')  # IT'S NOT A JSON... (NOR jsonl: single quotes instead of doubles)
         all_reviews = []
@@ -201,6 +230,8 @@ def specific_preprocess(dataset_raw_folder, dataset_name):
             orig_file_name = 'CDs_and_Vinyl'
         elif dataset_name == "amazon_music":
             orig_file_name = 'Digital_Music'
+        elif dataset_name == "amazon_books":
+            orig_file_name = 'Books'
 
         # File path for the Amazon dataset
         file_path = os.path.join(dataset_raw_folder, orig_file_name + '.json')  # IT'S NOT A JSON... (NOR jsonl: single quotes instead of doubles)
@@ -254,9 +285,11 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
         df = pd.read_csv(file_path, sep=',', header=0, engine="python")
         df.columns = ['uid', 'sid', 'rating', 'timestamp']
         return df
-    elif "amazon" in dataset_name or dataset_name=="steam" or dataset_name=="behance":
+    elif "amazon" in dataset_name or dataset_name=="steam" or dataset_name=="behance" or dataset_name=="yelp":
         if dataset_name == "steam":
             orig_file_name = 'steam'
+        elif dataset_name == "yelp":
+            orig_file_name = 'yelp'
         elif dataset_name == "behance":
             orig_file_name = 'behance'
         elif dataset_name == "amazon_beauty":
@@ -269,6 +302,8 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
             orig_file_name = 'CDs_and_Vinyl'
         elif dataset_name == "amazon_music":
             orig_file_name = 'Digital_Music'
+        elif dataset_name == "amazon_books":
+            orig_file_name = 'Books'
         file_path = os.path.join(dataset_raw_folder, orig_file_name + '.csv')
         df = pd.read_csv(file_path, header=None, engine="python")
         df.columns = ['uid', 'sid', 'rating', 'timestamp']
@@ -644,4 +679,33 @@ def load_user_info(dataset_raw_folder, dataset_name): #Is it really needed?
 '''
 
 
+import scipy.sparse as sp
+def get_graph_representation(list_of_lists):
+    num_users = len(list_of_lists)
+    num_items = np.max(np.concatenate([[y for y in x] for x in list_of_lists]))
+    num = num_users+1+num_items+1
+    matrix = sp.lil_matrix((num, num), dtype=np.float32)
+    for user_id, items_list in enumerate(list_of_lists):
+        for item_id in items_list:
+            a = user_id
+            b = item_id+(num_users+1)
+            matrix[a, b] = 1
+            matrix[b, a] = 1
+
+    rowsum = np.array(matrix.sum(axis=1))
+    d_inv = np.power(rowsum, -0.5).flatten()
+    d_inv[np.isinf(d_inv)] = 0.
+    d_mat = sp.diags(d_inv)
+
+    norm_adj = d_mat.dot(matrix)
+    norm_adj = norm_adj.dot(d_mat)
+    norm_adj = norm_adj.tocsr()
+
+    coo = norm_adj.tocoo().astype(np.float32)
+    row = torch.Tensor(coo.row).long()
+    col = torch.Tensor(coo.col).long()
+    index = torch.stack([row, col])
+    data = torch.FloatTensor(coo.data)
+    graph = torch.sparse_coo_tensor(index, data, torch.Size(coo.shape))
     
+    return graph

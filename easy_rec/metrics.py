@@ -247,14 +247,19 @@ class NDCG(RecMetric):
         super().__init__(top_k, batch_metric)
         self.batch_metric=batch_metric
 
+    def compute(self):
+        # print("comp------>",getattr(self, f"correct@10"))
+        # print("comp-tot----->",self.total)
+        return super().compute()
+
     def update(self, scores: torch.Tensor, relevance: torch.Tensor):
+        # print("upd------>",getattr(self, f"correct@10"))
         """
         Updates the metric values based on the input scores and relevance tensors.
 
         Args:
             scores (torch.Tensor): Tensor containing prediction scores.
             relevance (torch.Tensor): Tensor containing relevance values.
-
         """
         # Call not_nan_subset to subset scores, relevance where relevance is not nan
         kwargs = self.not_nan_subset(scores=scores, relevance=relevance)
