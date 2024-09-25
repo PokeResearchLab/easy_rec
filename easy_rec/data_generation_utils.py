@@ -543,8 +543,6 @@ def get_popularity_items(data: dict, num_items: int) -> torch.Tensor:
 
 
 
-
-
 # input: data DictSequentialDataset
 # node index: check different for users and items
 # u_t = torch.LongTensor(train_df.user_id_idx)
