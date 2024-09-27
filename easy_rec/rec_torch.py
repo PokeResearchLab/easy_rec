@@ -281,16 +281,16 @@ class RecommendationSequentialCollator(SequentialCollator):
         self.num_negatives = num_negatives
         
 
-        if negatives_distribution not in {"uniform",'dynamic_negatives'} and not isinstance(negatives_distribution, torch.Tensor): #modifica_g : aggiunto il caso di campionamento dinamico dei negativi  durante il training
+        if negatives_distribution not in {"uniform",'dynamic'} and not isinstance(negatives_distribution, torch.Tensor): #modifica_g : aggiunto il caso di campionamento dinamico dei negativi  durante il training
             raise NotImplementedError(f"Unsupported negatives_distribution: {negatives_distribution}")
         self.negatives_distribution = negatives_distribution
         if self.negatives_distribution == "uniform":
             self.sample_from_negative_distribution = self.uniform_negatives
         elif isinstance(negatives_distribution, torch.Tensor):
             self.sample_from_negative_distribution = self.distr_negatives
-        elif self.negatives_distribution == 'dynamic_negatives': #modifica_g: gestione del caso campionamento dinamico dei negativi durante il training 
-            negatives_buffer = {} # initialize a buffer to save the sampled negtives at each epoch
-            self.register_buffer('negatives_buffer', negatives_buffer)
+        elif self.negatives_distribution == 'dynamic': #modifica_g: gestione del caso campionamento dinamico dei negativi durante il training 
+            self.negatives_buffer = {} # initialize a buffer to save the sampled negtives at each epoch
+            #self.register_buffer('negatives_buffer', negatives_buffer)
             self.sample_from_negative_distribution = self.dynamic_negatives
             
             
@@ -360,14 +360,14 @@ class RecommendationSequentialCollator(SequentialCollator):
         if self.negatives_buffer == {}:
             return self.uniform_negatives(possible_negatives, n)
         
-        # Keep the negatives with score higher than the target
+        # Get the negatives with score higher than the target in the previous epoch
         new_negatives = self.negatives_buffer[i]
 
         if len(new_negatives) < n:
             new_negatives = torch.cat([new_negatives, self.uniform_negatives(possible_negatives, n-len(new_negatives))])
         
         new_negatives = new_negatives[torch.randperm(len(new_negatives))] #shuffle new_negatives
-        new_negatives = new_negatives.reshape(1, -1, self.num_negatives)
+        #new_negatives = new_negatives.reshape(1, -1, self.num_negatives)
 
         return new_negatives
 

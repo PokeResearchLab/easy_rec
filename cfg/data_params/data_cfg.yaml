@@ -32,6 +32,10 @@ collator_params:
     train: 1
     val: 1
     test: 100
+  negatives_distribution:
+    train: dynamic
+    val: uniform
+    test: uniform
 
 split_method: leave_n_out #the split method of the dataset, including 'leave_n_out', 'hold_out', 'k_fold'
 test_sizes: [*test_size,*val_size] #"n" for leave_n_out the number of (positive) samples for each user in the test set

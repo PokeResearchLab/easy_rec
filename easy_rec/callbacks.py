@@ -28,6 +28,7 @@ class DynamicNegatives(pl.callbacks.Callback):
         self.sampled_negatives = torch.cat(self.sampled_negatives)
         self.predictions_neg = torch.cat(self.predictions_neg)
         self.predictions_pos = torch.cat(self.predictions_pos)
+        self.id_keys = torch.cat(self.id_keys)
         sampled_negatives_reshaped = self.sampled_negatives.reshape(self.sampled_negatives.shape[0], -1)
         predictions_pos_reshaped = self.predictions_pos.reshape(self.predictions_pos.shape[0], -1)
         predictions_neg_reshaped = self.predictions_neg.reshape(self.predictions_neg.shape[0], -1)
@@ -36,7 +37,7 @@ class DynamicNegatives(pl.callbacks.Callback):
 
         negatives_buffer = {}
         for i, id_key in enumerate(self.id_keys):
-            negatives_buffer[id_key] = sampled_negatives_reshaped[i][mask[i]]
+            negatives_buffer[id_key.item()] = sampled_negatives_reshaped[i][mask[i]]
         self.init_vars()
 
         self.dataloader.collate_fn.update_buffer(negatives_buffer)
