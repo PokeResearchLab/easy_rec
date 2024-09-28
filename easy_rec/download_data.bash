@@ -24,7 +24,7 @@ curl -o ml-100k.zip https://files.grouplens.org/datasets/movielens/ml-100k.zip
 
 unzip ml-100k.zip 
 
-rm ml-20m.zip && ml-1m.zip && rm ml-100k.zip
+rm ml-20m.zip && rm ml-1m.zip && rm ml-100k.zip
 
 cd amazon_beauty
 

@@ -29,8 +29,8 @@ collator_params:
     val: &val_size 1 #the output sequence length of the validation set
     test: &test_size 1 #the output sequence length of the test set
   num_negatives:
-    train: 1
-    val: 1
+    train: 10
+    val: 10
     test: 100
   negatives_distribution:
     train: dynamic

@@ -1,12 +1,13 @@
 import torch
 import pytorch_lightning as pl
 class DynamicNegatives(pl.callbacks.Callback):
-    def __init__(self, dataloader, neg_key = "out_sid", id_key = "uid"):
+    def __init__(self, dataloader, neg_key = "out_sid", id_key = "uid", padding_idx = 0):
         super().__init__()
         self.dataloader = dataloader
 
         self.neg_key = neg_key
         self.id_key = id_key
+        self.padding_idx = padding_idx
 
         self.init_vars()
     
@@ -29,19 +30,14 @@ class DynamicNegatives(pl.callbacks.Callback):
         self.predictions_neg = torch.cat(self.predictions_neg)
         self.predictions_pos = torch.cat(self.predictions_pos)
         self.id_keys = torch.cat(self.id_keys)
-        sampled_negatives_reshaped = self.sampled_negatives.reshape(self.sampled_negatives.shape[0], -1)
-        predictions_pos_reshaped = self.predictions_pos.reshape(self.predictions_pos.shape[0], -1)
-        predictions_neg_reshaped = self.predictions_neg.reshape(self.predictions_neg.shape[0], -1)
 
-        mask = predictions_neg_reshaped >= predictions_pos_reshaped # compare the negative scores with the target one
+        mask = self.predictions_neg >= self.predictions_pos # compare the negative scores with the target one
 
         negatives_buffer = {}
         for i, id_key in enumerate(self.id_keys):
-            negatives_buffer[id_key.item()] = sampled_negatives_reshaped[i][mask[i]]
+            neg_set = set(self.sampled_negatives[i][mask[i]].flatten().tolist())
+            neg_set = neg_set - {self.padding_idx}
+            negatives_buffer[id_key.item()] = neg_set
         self.init_vars()
 
         self.dataloader.collate_fn.update_buffer(negatives_buffer)
-
-
-#loader_params = cfg["model"]["loader_params"].copy()
-#loader_params['multiprocessing_context']='fork' if torch.backends.mps.is_available() else None

@@ -3,4 +3,4 @@ batch_size: 128 #2048
 # shuffle: True
 /persistent_workers: False
 /pin_memory: False
-#multiprocessing_context: fork #if on MPS you get RuntimeError: _share_filename_: only available on CPU
+multiprocessing_context: fork #if on MPS you get RuntimeError: _share_filename_: only available on CPU

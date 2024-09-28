@@ -357,11 +357,12 @@ class RecommendationSequentialCollator(SequentialCollator):
 
     def dynamic_negatives(self, possible_negatives, n, i):
         # If the buffer is empty, sample uniformly
-        if self.negatives_buffer == {}:
+        if len(self.negatives_buffer) == 0:
             return self.uniform_negatives(possible_negatives, n)
         
         # Get the negatives with score higher than the target in the previous epoch
         new_negatives = self.negatives_buffer[i]
+        
 
         if len(new_negatives) < n:
             new_negatives = torch.cat([new_negatives, self.uniform_negatives(possible_negatives, n-len(new_negatives))])
