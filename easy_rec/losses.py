@@ -128,10 +128,10 @@ class SequentialGeneralizedBCEWithLogitsLoss(SequentialBCEWithLogitsLoss):
         super().__init__(*args, **kwargs)
         self.beta = beta
         self.eps = eps
-
+    
     def forward(self, input, target):
         is_positive = target > 0.5
-        new_input, new_target = input+0, target+0
+        new_input, new_target = input+0, target+0 #to force copy?
         
         if self.beta == 0:
             new_input,new_target = new_input[~is_positive], new_target[~is_positive]

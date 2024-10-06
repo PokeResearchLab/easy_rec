@@ -361,8 +361,7 @@ class RecommendationSequentialCollator(SequentialCollator):
             return self.uniform_negatives(possible_negatives, n)
         
         # Get the negatives with score higher than the target in the previous epoch
-        new_negatives = self.negatives_buffer[i]
-        
+        new_negatives = torch.tensor(list(self.negatives_buffer[i]))
 
         if len(new_negatives) < n:
             new_negatives = torch.cat([new_negatives, self.uniform_negatives(possible_negatives, n-len(new_negatives))])
