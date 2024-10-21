@@ -53,7 +53,7 @@ def prepare_rank_corrections(metrics_info, num_negatives = None, num_items = Non
                     else:
                         put_uncorrected_to_use = put_uncorrected
                     if put_uncorrected_to_use:
-                        rank_corrections["uncorrected"] = lambda x: x
+                        rank_corrections[""] = lambda x: x
                     if num_negatives_already_split:
                         num_negatives_to_use = num_negatives[split_name][dataloader_idx]
                     else:
@@ -78,7 +78,7 @@ class RecMetric(torchmetrics.Metric):
             top_k (list): List of integers representing top-k values for evaluation.
             batch_metric (bool): Whether to compute metrics on batch level or not.
     """
-    def __init__(self, top_k = [5,10,20], batch_metric = False, rank_corrections = {"uncorrected": lambda x: x}):
+    def __init__(self, top_k = [5,10,20], batch_metric = False, rank_corrections = {"": lambda x: x}):
         super().__init__()
         self.top_k = top_k if isinstance(top_k, list) else [top_k]
         self.batch_metric = batch_metric
@@ -88,9 +88,9 @@ class RecMetric(torchmetrics.Metric):
         for rank_correction_name in self.rank_corrections.keys():
             for top_k in self.top_k:
                 if not self.batch_metric:
-                    self.add_state(f"correct@{top_k}_{rank_correction_name}", default=torch.tensor(0.), dist_reduce_fx="sum")
+                    self.add_state(f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", default=torch.tensor(0.), dist_reduce_fx="sum")
                 else:
-                    self.add_state(f"correct@{top_k}_{rank_correction_name}", default=[], dist_reduce_fx="cat")
+                    self.add_state(f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", default=[], dist_reduce_fx="cat")
         
         if not self.batch_metric:
             self.add_state(f"total", default=torch.tensor(0.), dist_reduce_fx="sum")
@@ -106,11 +106,11 @@ class RecMetric(torchmetrics.Metric):
         out = {}
         for rank_correction_name in self.rank_corrections.keys():
             for k in self.top_k:
-                out[f"@{k}_{rank_correction_name}"] = getattr(self, f"correct@{k}_{rank_correction_name}")
+                out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"] = getattr(self, f"correct@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}")
                 if not self.batch_metric:
-                    out[f"@{k}_{rank_correction_name}"] = out[f"@{k}_{rank_correction_name}"] / self.total
+                    out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"] = out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"] / self.total
                 else:
-                    out[f"@{k}_{rank_correction_name}"] = torchmetrics.utilities.dim_zero_cat(out[f"@{k}_{rank_correction_name}"])
+                    out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"] = torchmetrics.utilities.dim_zero_cat(out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"])
         return out
     
     def not_nan_subset(self, **kwargs):
@@ -169,9 +169,9 @@ class RLS_Jaccard(RecMetric):
                 union_size = torch.logical_or(app1, app2).sum(-1)
                 jaccard_sim = intersection_size.float()/union_size
                 if not self.batch_metric:
-                    setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}") + jaccard_sim.sum())
+                    setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}") + jaccard_sim.sum())
                 else:
-                    getattr(self, f"correct@{top_k}_{rank_correction_name}").append(jaccard_sim)
+                    getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}").append(jaccard_sim)
         
         if not self.batch_metric:
             self.total += relevance.shape[0]
@@ -216,9 +216,9 @@ class RLS_RBO(RecMetric):
                 if top_k in self.top_k:
                     rbo = (1-self.rbo_p)*intersection_sizes_sum
                     if not self.batch_metric:
-                        setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}") + rbo.sum())
+                        setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}") + rbo.sum())
                     else:
-                        getattr(self, f"correct@{top_k}_{rank_correction_name}").append(rbo)
+                        getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}").append(rbo)
         
         if not self.batch_metric:
             self.total += relevance.shape[0]
@@ -263,9 +263,9 @@ class RLS_FRBO(RecMetric):
                 if top_k in self.top_k:
                     frbo = (1-self.rbo_p)/(1-(self.rbo_p**top_k))*intersection_sizes_sum
                     if not self.batch_metric:
-                        setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}") + frbo.sum())
+                        setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}") + frbo.sum())
                     else:
-                        getattr(self, f"correct@{top_k}_{rank_correction_name}").append(frbo)
+                        getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}").append(frbo)
         
         if not self.batch_metric:
             self.total += relevance.shape[0]
@@ -355,9 +355,9 @@ class NDCG(RecMetric):
                 idcg = (sorted_k_relevance/torch.log2(torch.arange(1,k+1,device=sorted_k_relevance.device)+1)).sum(-1)
                 ndcg = dcg/idcg # ndcg.shape = (num_samples, lookback)
                 if not self.batch_metric:
-                    setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}") + ndcg.sum())
+                    setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}") + ndcg.sum())
                 else:
-                    getattr(self, f"correct@{top_k}_{rank_correction_name}").append(ndcg)
+                    getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}").append(ndcg)
         if not self.batch_metric:
             self.total += relevance.shape[0]
     
@@ -385,9 +385,9 @@ class MRR(RecMetric):
             for top_k in self.top_k:
                 mrr = ((correct_ranks<=top_k)*relevant*(1/correct_ranks)).max(-1).values
                 if not self.batch_metric:
-                    setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}") + mrr.sum())
+                    setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}") + mrr.sum())
                 else:
-                    getattr(self, f"correct@{top_k}_{rank_correction_name}").append(mrr)
+                    getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}").append(mrr)
         if not self.batch_metric:
             self.total += relevance.shape[0]
 
@@ -421,9 +421,9 @@ class Precision(RecMetric):
             for top_k in self.top_k:
                 precision = ((correct_ranks<=top_k)*relevant/top_k).sum(-1)
                 if not self.batch_metric:
-                    setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}") + precision.sum())
+                    setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}") + precision.sum())
                 else:
-                    getattr(self, f"correct@{top_k}_{rank_correction_name}").append(precision)
+                    getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}").append(precision)
         if not self.batch_metric:
             self.total += relevance.shape[0]
 
@@ -452,9 +452,9 @@ class Recall(RecMetric):
                 recall = ((correct_ranks<=top_k)*relevant/relevant.sum(-1,keepdim=True)).sum(-1)
                 #torch.minimum(relevant.sum(-1,keepdim=True),top_k*torch.ones_like(relevant.sum(-1,keepdim=True)))
                 if not self.batch_metric:
-                    setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}") + recall.sum())
+                    setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}") + recall.sum())
                 else:
-                    getattr(self, f"correct@{top_k}_{rank_correction_name}").append(recall)
+                    getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}").append(recall)
         if not self.batch_metric:
             self.total += relevance.shape[0]
 
@@ -478,7 +478,7 @@ class F1(RecMetric):
         out = {}
         for rank_correction_name in self.rank_corrections.keys():
             for k in self.top_k:
-                out[f"@{k}_{rank_correction_name}"] = 2*(precision[f"@{k}_{rank_correction_name}"]*recall[f"@{k}_{rank_correction_name}"])/(precision[f"@{k}_{rank_correction_name}"]+recall[f"@{k}_{rank_correction_name}"])
+                out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"] = 2*(precision[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"]*recall[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"])/(precision[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"]+recall[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"])
         return out
 
 class PrecisionWithRelevance(RecMetric):
@@ -487,7 +487,6 @@ class PrecisionWithRelevance(RecMetric):
     It is used to explicitly count the number of recommended, or retrieved, items that are truly relevant.
     '''
     def __init__(self, *args, **kwargs):
-        print("-->",kwargs)
         super().__init__(*args, **kwargs)
 
     def update(self, scores: torch.Tensor, relevance: torch.Tensor):
@@ -505,9 +504,9 @@ class PrecisionWithRelevance(RecMetric):
             for top_k in self.top_k:
                 precision = ((correct_ranks<=top_k)*relevance/(top_k*relevance.sum(-1,keepdim=True))).sum(-1)
                 if not self.batch_metric:
-                    setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}") + precision.sum())
+                    setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}") + precision.sum())
                 else:
-                    getattr(self, f"correct@{top_k}_{rank_correction_name}").append(precision)
+                    getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}").append(precision)
 
         if not self.batch_metric:
             self.total = self.total + relevance.shape[0] #not using += cause getting InferenceMode error sometimes
@@ -532,18 +531,18 @@ class MAP(RecMetric):
             for rank_correction_name in self.rank_corrections.keys():
                 for top_k in self.top_k:
                     for k in range(1,top_k+1):
-                        setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}") + getattr(self.precision_at_k, f"correct@{k}_{rank_correction_name}"))
-                    setattr(self, f"correct@{top_k}_{rank_correction_name}", getattr(self, f"correct@{top_k}_{rank_correction_name}")/top_k)
+                        setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}") + getattr(self.precision_at_k, f"correct@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"))
+                    setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", getattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}")/top_k)
             setattr(self,"total", getattr(self.precision_at_k, f"total"))
         else:
             for rank_correction_name in self.rank_corrections.keys():
                 for top_k in self.top_k:
-                    correct = getattr(self.precision_at_k, f"correct@{top_k}_{rank_correction_name}")
+                    correct = getattr(self.precision_at_k, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}")
                     for k in range(1,top_k):
-                        new_correct = getattr(self.precision_at_k, f"correct@{k}_{rank_correction_name}")
+                        new_correct = getattr(self.precision_at_k, f"correct@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}")
                         for i,c in enumerate(new_correct):
                             correct[i] += c
-                    setattr(self, f"correct@{top_k}_{rank_correction_name}", [c/top_k for c in correct])
+                    setattr(self, f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", [c/top_k for c in correct])
         
         return super().compute()
     
