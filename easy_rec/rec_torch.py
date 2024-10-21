@@ -497,7 +497,7 @@ def prepare_rec_collators(split_keys = ["train", "val", "test"],
             if isinstance(value, dict):
                 if split_name in value.keys():
                     split_collator_params[key] = value[split_name]
-        split_collator_params = change_num_negative_if_float(split_collator_params, split_collator_params["num_items"])
+        split_collator_params = change_num_negative_if_float(split_collator_params)
 
         # orig_seq_id = original_seq_id if original_seq_id in data else f"{split_name}_{original_seq_id}"
         # orig_seq_key = original_seq_key if original_seq_key in data else f"{split_name}_{original_seq_key}"
@@ -508,10 +508,10 @@ def prepare_rec_collators(split_keys = ["train", "val", "test"],
 
     return collators
 
-def change_num_negative_if_float(collator_params, total_items):
+def change_num_negative_if_float(collator_params):
     if "num_negatives" in collator_params:
         if isinstance(collator_params["num_negatives"], float):
-            collator_params["num_negatives"] = int(collator_params["num_negatives"]*total_items)
+            collator_params["num_negatives"] = int(collator_params["num_negatives"]*collator_params["num_items"])
         # elif isinstance(collator_params["num_negatives"], dict):
         #     for key in collator_params["num_negatives"]:
         #         if isinstance(collator_params["num_negatives"][key], float):
