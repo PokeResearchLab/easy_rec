@@ -39,12 +39,12 @@ class SASRec(torch.nn.Module):
         # Layer normalization
         self.last_layernorm = torch.nn.LayerNorm(emb_size, eps=1e-8)
 
-    def forward(self, input_seqs, poss_item_seqs):
+    def forward(self, input_seqs, items_to_predict):
 
         ''' 
         Input:
             input_seqs (torch.Tensor): Tensor containing input item sequences. Shape (batch_size, sequence_length).
-            poss_item_seqs (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, output_seq_len, num_items)
+            items_to_predict (torch.Tensor): Tensor containing possible items. Shape (batch_size, output_seq_len, num_items)
 
         Output:
             scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, output_seq_len, num_items)
@@ -62,14 +62,14 @@ class SASRec(torch.nn.Module):
 
         encoded = self.encoder(embedded, attention_mask)
 
-        log_feats = self.last_layernorm(encoded).unsqueeze(2)
+        encoded = self.last_layernorm(encoded).unsqueeze(2)
 
-        poss_item_embs = self.item_emb(poss_item_seqs)
+        poss_item_embs = self.item_emb(items_to_predict)
 
-        # Use only last timesteps in poss_item_seqs --> cut log_feats to match poss_item_embs
-        log_feats = log_feats[:, -poss_item_embs.shape[1]:, :, :] # (B, T, 1, E)
+        # Use only last timesteps in items_to_predict --> cut encoded to match poss_item_embs
+        encoded = encoded[:, -poss_item_embs.shape[1]:, :, :] # (B, T, 1, E)
 
-        scores = (log_feats * poss_item_embs).sum(dim=-1)
+        scores = (encoded * poss_item_embs).sum(dim=-1)
 
         return scores
     
@@ -118,12 +118,12 @@ class SASRec2(torch.nn.Module):
         # Layer normalization
         self.last_layernorm = torch.nn.LayerNorm(emb_size, eps=1e-8)
 
-    def forward(self, input_seqs, poss_item_seqs):
+    def forward(self, input_seqs, items_to_predict):
 
         ''' 
     Input:
         input_seqs (torch.Tensor): Tensor containing input item sequences. Shape (batch_size, sequence_length).
-        poss_item_seqs (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, input_seq_len, output_seq_len, num_items)
+        items_to_predict (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, input_seq_len, output_seq_len, num_items)
 
     Output:
         scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, input_seq_len, output_seq_len, num_items)
@@ -138,13 +138,13 @@ class SASRec2(torch.nn.Module):
 
         encoded = self.encoder(embedded, attention_mask)
 
-        log_feats = encoded.unsqueeze(2)
+        encoded = encoded.unsqueeze(2)
 
-        poss_item_embs = self.item_emb(poss_item_seqs)
+        poss_item_embs = self.item_emb(items_to_predict)
 
-        # Use only last timesteps in poss_item_seqs --> cut log_feats to match poss_item_embs
-        log_feats = log_feats[:, -poss_item_embs.shape[1]:, :, :] # (B, T, 1, E)
+        # Use only last timesteps in items_to_predict --> cut encoded to match poss_item_embs
+        encoded = encoded[:, -poss_item_embs.shape[1]:, :, :] # (B, T, 1, E)
 
-        scores = (log_feats * poss_item_embs).sum(dim=-1)
+        scores = (encoded * poss_item_embs).sum(dim=-1)
 
         return scores

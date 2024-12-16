@@ -10,7 +10,7 @@ item_dropout_rate: 0.2
     input: null
 
 __global__:
-  data_params.dataset_params.keep_last.train: 1
-  data_params.dataset_params.keep_last.val: null
-  data_params.dataset_params.keep_last.test: null
-  data_params.dataset_params.stride: 10
+  data_params.collator_params.keep_last.train: 1
+  data_params.collator_params.keep_last.val: null
+  data_params.collator_params.keep_last.test: null
+#  data_params.collator_params.stride: 10
