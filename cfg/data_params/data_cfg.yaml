@@ -1,5 +1,5 @@
 £name:
-  default: ml-100k
+  default: amazon_beauty #ml-100k
   values: [amazon_beauty, ml-1m, foursquare-nyc] #[amazon_beauty, ml-100k, ml-1m, steam] #the name of the dataset
 /data_folder: ../data/raw/  #path of the dataset
 
@@ -29,13 +29,13 @@ collator_params:
     val: &val_size 1 #the output sequence length of the validation set
     test: &test_size 1 #the output sequence length of the test set
   num_negatives:
-    train: 10
-    val: 10
-    test: 100
-  negatives_distribution:
-    train: dynamic
-    val: uniform
-    test: uniform
+    train: 1
+    val: 1.
+    test: 1.
+  negatives_distribution: uniform
+    # train: dynamic
+    # val: uniform
+    # test: uniform
 
 split_method: leave_n_out #the split method of the dataset, including 'leave_n_out', 'hold_out', 'k_fold'
 test_sizes: [*test_size,*val_size] #"n" for leave_n_out the number of (positive) samples for each user in the test set

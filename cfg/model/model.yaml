@@ -12,10 +12,10 @@ loss: SequentialBCEWithLogitsLoss #SequentialCrossEntropyLoss #SequentialBPR #Se
 #       beta: 0.5
 
 metrics:
-  # - Precision
-  # - Recall
+  - Precision
+  - Recall
   # - F1
-  # - MAP
+  - MAP
   - NDCG
   - MRR
   # - RLS_Jaccard
@@ -24,7 +24,7 @@ metrics:
 
 log_params:
   on_epoch: True
-  on_step: True
+  on_step: False
 
 /step_routing:
   model_input_from_batch: ["in_sid", "out_sid"]
@@ -33,14 +33,14 @@ log_params:
   loss_input_from_batch:
     target: relevance
   metrics_input_from_batch:
-    # Precision:
-    #   relevance: relevance
-    # Recall:
-    #   relevance: relevance
+    Precision:
+      relevance: relevance
+    Recall:
+      relevance: relevance
     # F1:
     #   relevance: relevance
-    # MAP:
-    #   relevance: relevance
+    MAP:
+      relevance: relevance
     NDCG:
       relevance: relevance
     MRR:
@@ -52,14 +52,14 @@ log_params:
     # RLS_FRBO:
     #   relevance: relevance
   metrics_input_from_model_output:
-    # Precision:
-    #   scores: null
-    # Recall:
-    #   scores: null
+    Precision:
+      scores: null
+    Recall:
+      scores: null
     # F1:
     #   scores: null
-    # MAP:
-    #   scores: null
+    MAP:
+      scores: null
     NDCG:
       scores: null
     MRR:

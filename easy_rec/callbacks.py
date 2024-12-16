@@ -9,6 +9,8 @@ class DynamicNegatives(pl.callbacks.Callback):
         self.id_key = id_key
         self.padding_idx = padding_idx
 
+        self.dataloader.negatives_buffer = {}
+
         self.init_vars()
     
     def init_vars(self):
@@ -41,3 +43,22 @@ class DynamicNegatives(pl.callbacks.Callback):
         self.init_vars()
 
         self.dataloader.collate_fn.update_buffer(negatives_buffer)
+
+# def update_buffer(self,new_negative_buffer):
+#     self.negatives_buffer = new_negative_buffer.copy()
+
+# def dynamic_negatives(self, possible_negatives, n, i):
+#     # If the buffer is empty, sample uniformly
+#     if len(self.negatives_buffer) == 0:
+#         return self.uniform_negatives(possible_negatives, n)
+    
+#     # Get the negatives with score higher than the target in the previous epoch
+#     new_negatives = torch.tensor(list(self.negatives_buffer[i]))
+
+#     if len(new_negatives) < n:
+#         new_negatives = torch.cat([new_negatives, self.uniform_negatives(possible_negatives, n-len(new_negatives))])
+    
+#     new_negatives = new_negatives[torch.randperm(len(new_negatives))] #shuffle new_negatives
+#     #new_negatives = new_negatives.reshape(1, -1, self.num_negatives)
+
+#     return new_negatives

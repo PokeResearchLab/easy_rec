@@ -114,10 +114,14 @@ def get_rating_files_per_dataset(dataset_name):
         return ['u.data']
     elif dataset_name == "ml-20m":
         return ['ratings.csv']
+    elif dataset_name == "bookcrossing":
+        return ['BX-Book-Ratings.csv']
     elif dataset_name == "steam":
         return ['steam.csv']
     elif dataset_name == "amazon_beauty":
         return ['All_Beauty.csv']
+    elif dataset_name == "amazon_instruments":
+        return ['Musical_Instruments.csv']
     elif dataset_name == "amazon_videogames":
         return ['Video_Games.csv']
     elif dataset_name == "amazon_toys":
@@ -232,6 +236,8 @@ def specific_preprocess(dataset_raw_folder, dataset_name):
             orig_file_name = 'Digital_Music'
         elif dataset_name == "amazon_books":
             orig_file_name = 'Books'
+        elif dataset_name == 'amazon_instruments':
+            orig_file_name = 'Musical_Instruments'
 
         # File path for the Amazon dataset
         file_path = os.path.join(dataset_raw_folder, orig_file_name + '.json')  # IT'S NOT A JSON... (NOR jsonl: single quotes instead of doubles)
@@ -285,6 +291,15 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
         df = pd.read_csv(file_path, sep=',', header=0, engine="python")
         df.columns = ['uid', 'sid', 'rating', 'timestamp']
         return df
+    elif dataset_name == "bookcrossing":
+        file_path = os.path.join(dataset_raw_folder,'BX-Book-Ratings.csv')
+        df = pd.read_csv(file_path, sep=';', header=0, engine="python", quoting=3, encoding = "unicode_escape")
+        df.columns = ['uid', 'sid', 'rating']
+        df = df.rename(columns={'"User-ID"': '"ISBN"', '"Book-Rating"': "rating"})
+        df['uid'] = df['uid'].replace('"', '', regex=True).apply(lambda x: pd.to_numeric(x, errors='coerce').astype(int))
+        df['rating'] = df['rating'].replace('"', '', regex=True).apply(lambda x: pd.to_numeric(x, errors='coerce').astype(int))
+        df["timestamp"] = 0
+        return df
     elif "amazon" in dataset_name or dataset_name=="steam" or dataset_name=="behance" or dataset_name=="yelp":
         if dataset_name == "steam":
             orig_file_name = 'steam'
@@ -296,6 +311,8 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
             orig_file_name = 'All_Beauty'
         elif dataset_name == "amazon_videogames":
             orig_file_name = 'Video_Games'
+        elif dataset_name == "amazon_instruments":
+            orig_file_name = 'Musical_Instruments'
         elif dataset_name == "amazon_toys":
             orig_file_name = 'Toys_and_Games'
         elif dataset_name == "amazon_cds":

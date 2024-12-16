@@ -1,7 +1,6 @@
 import torch
 
 class SASRec(torch.nn.Module):
-
     def __init__(self, 
                  num_items, 
                  lookback, 

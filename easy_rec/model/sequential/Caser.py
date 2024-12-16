@@ -47,7 +47,7 @@ class Caser(torch.nn.Module):
 
         self.dropout = torch.nn.Dropout(drop_rate)
 
-    def forward(self, input_seqs, poss_item_seqs, user_var):
+    def forward(self, input_seqs, items_to_predict, user_var):
         # Embedding Look-up
         item_embs = self.item_embeddings(input_seqs)
         item_embs = item_embs.unsqueeze(1) #To get channel dimension for convolution
@@ -73,10 +73,10 @@ class Caser(torch.nn.Module):
         z = self.act_fc(self.fc1(out)) # (N, emb_size)
         x = torch.cat([z, user_emb], -1).unsqueeze(1).unsqueeze(2) # (N, 1, 1, 2*emb_size)
 
-        w2 = self.W2(poss_item_seqs)
-        b2 = self.b2(poss_item_seqs)
+        w2 = self.W2(items_to_predict)
+        b2 = self.b2(items_to_predict)
 
-        x = x[:, -poss_item_seqs.shape[1]:, :, :] # (N, 1, 1, 2*emb_size)
+        x = x[:, -items_to_predict.shape[1]:, :, :] # (N, 1, 1, 2*emb_size)
 
         res = (w2 * x).sum(dim=-1) + b2.squeeze(-1)
 
@@ -130,7 +130,7 @@ class Caser2(torch.nn.Module):
 
         self.dropout = torch.nn.Dropout(drop_rate)
 
-    def forward(self, input_seqs, poss_item_seqs, user_var):
+    def forward(self, input_seqs, items_to_predict, user_var):
         lookback = input_seqs.shape[1]
         # Embedding Look-up
         item_embs = self.item_embeddings(input_seqs)
@@ -164,10 +164,10 @@ class Caser2(torch.nn.Module):
         user_emb = user_emb.unsqueeze(1).repeat(1, lookback, 1) # repeat user emb to have the same shape as z
         x = torch.cat([z, user_emb], -1).unsqueeze(2) # (N, L, 1, 2*emb_size)
 
-        w2 = self.W2(poss_item_seqs)
-        b2 = self.b2(poss_item_seqs)
+        w2 = self.W2(items_to_predict)
+        b2 = self.b2(items_to_predict)
 
-        x = x[:, -poss_item_seqs.shape[1]:, :, :] # (N, L, K, 2*emb_size)
+        x = x[:, -items_to_predict.shape[1]:, :, :] # (N, L, K, 2*emb_size)
 
         res = (w2 * x).sum(dim=-1) + b2.squeeze(-1) # (N, L, K)
 

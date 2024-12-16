@@ -11,14 +11,14 @@ class GRU4Rec(torch.nn.Module):
                  padding_value = 0,
                  **kwargs):
         '''
-    args:
-        num_items (int): Number of items in the dataset.
-        hidden_size (int): Size of the hidden state in the GRU.
-        num_layers (int, optional): Number of layers in the GRU. Defaults to 1.
-        dropout_hidden (float, optional): Dropout rate for hidden states in the GRU. Defaults to 0.
-        dropout_input (float, optional): Dropout rate for input embeddings. Defaults to 0.
-        emb_size (int, optional): Size of the item embedding. Defaults to 50.
-    '''
+        args:
+            num_items (int): Number of items in the dataset.
+            hidden_size (int): Size of the hidden state in the GRU.
+            num_layers (int, optional): Number of layers in the GRU. Defaults to 1.
+            dropout_hidden (float, optional): Dropout rate for hidden states in the GRU. Defaults to 0.
+            dropout_input (float, optional): Dropout rate for input embeddings. Defaults to 0.
+            emb_size (int, optional): Size of the item embedding. Defaults to 50.
+        '''
         
         super(GRU4Rec, self).__init__()
 
@@ -40,12 +40,12 @@ class GRU4Rec(torch.nn.Module):
         # GRU layer
         self.gru = torch.nn.GRU(emb_size, hidden_size, num_layers, dropout=dropout_hidden, batch_first=True)
 
-    def forward(self, input_seqs, poss_item_seqs):
+    def forward(self, input_seqs, items_to_predict):
 
         ''' 
     Input:
         input_seqs (torch.Tensor): Tensor containing input item sequences. Shape (batch_size, sequence_length).
-        poss_item_seqs (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, input_seq_len, output_seq_len, num_items)
+        items_to_predict (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, input_seq_len, output_seq_len, num_items)
 
     Output:
         scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, input_seq_len, output_seq_len, num_items)
@@ -60,8 +60,8 @@ class GRU4Rec(torch.nn.Module):
 
         scores = self.h2o(output)
 
-        scores = scores[:, -poss_item_seqs.shape[1]:, :]
+        scores = scores[:, -items_to_predict.shape[1]:, :]
 
-        scores = torch.gather(scores, -1, poss_item_seqs) # Get scores for items in poss_item_seqs
+        scores = torch.gather(scores, -1, items_to_predict) # Get scores for items in items_to_predict
 
         return scores
