@@ -141,7 +141,7 @@ def get_rating_files_per_dataset(dataset_name):
     elif dataset_name == "yelp":
         return ['yelp.csv']
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Get_rating_files_per_dataset for dataset {dataset_name} not supported")
 
 
 def specific_preprocess(dataset_raw_folder, dataset_name): 
@@ -261,7 +261,7 @@ def specific_preprocess(dataset_raw_folder, dataset_name):
     
     # If the dataset_name is neither "steam" nor an Amazon dataset, raise NotImplementedError
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"specific_preprocess for dataset {dataset_name} not supported")
 
 
 def load_ratings_df(dataset_raw_folder, dataset_name):
@@ -337,7 +337,7 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
         df["timestamp"] = df["UTC_time"].apply(lambda x: datetime.datetime.strptime(x, "%a %b %d %H:%M:%S %z %Y").timestamp())
         return df
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Load_ratings_df for dataset {dataset_name} not supported")
     
 
 #implicit = don't use ratings
@@ -502,7 +502,7 @@ def split_rec_data(data, split_method, split_keys, test_sizes, **kwargs):
     # #TODO: split by interactions
     #     #...
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Split method {split_method} not supported")
     return data
 
 
@@ -724,3 +724,7 @@ def get_graph_representation(list_of_lists):
     graph = torch.sparse_coo_tensor(index, data, torch.Size(coo.shape))
     
     return graph
+
+
+def get_max_number_of(maps, key):
+    return np.max(list(maps[key].values()))

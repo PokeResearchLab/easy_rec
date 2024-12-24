@@ -40,22 +40,22 @@ class GRU4Rec(torch.nn.Module):
         self.gru = torch.nn.GRU(emb_size, emb_size, num_layers, dropout=dropout_hidden, batch_first=True)
 
     def forward(self, input_seqs, items_to_predict):
-
         ''' 
-    Input:
-        input_seqs (torch.Tensor): Tensor containing input item sequences. Shape (batch_size, sequence_length).
-        items_to_predict (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, input_seq_len, output_seq_len, num_items)
+        Input:
+            input_seqs (torch.Tensor): Tensor containing input item sequences. Shape (batch_size, sequence_length).
+            items_to_predict (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, input_seq_len, output_seq_len, num_items)
 
-    Output:
-        scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, input_seq_len, output_seq_len, num_items)
-
+        Output:
+            scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, input_seq_len, output_seq_len, num_items)
         '''
 
         embedded = self.item_emb(input_seqs)
 
         embedded = self.inp_dropout(embedded)
 
-        output, hidden = self.gru(embedded, torch.tile(self.hidden, (1, input_seqs.shape[0], 1)))
+        hidden_repeated = self.hidden.unsqueeze(1).repeat(1, input_seqs.shape[0], 1) #torch.tile(self.hidden, (1, input_seqs.shape[0], 1))
+
+        output, hidden = self.gru(embedded, hidden_repeated)
 
         encoded = output.unsqueeze(2)
         poss_item_embs = self.item_emb(items_to_predict)
