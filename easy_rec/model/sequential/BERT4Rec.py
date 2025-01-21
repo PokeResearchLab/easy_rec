@@ -5,9 +5,9 @@ class BERT4Rec(torch.nn.Module):
                  num_items, 
                  emb_size, 
                  lookback, 
-                 bert_num_blocks, 
-                 bert_num_heads, 
-                 dropout_rate, 
+                 bert_num_blocks=1, 
+                 bert_num_heads=1, 
+                 dropout_rate=0, 
                  padding_value=0, 
                  **kwargs):
         '''
@@ -28,17 +28,19 @@ class BERT4Rec(torch.nn.Module):
         self.pos_emb = torch.nn.Embedding(lookback, emb_size)
         self.dropout = torch.nn.Dropout(p=dropout_rate)
 
+        #TODO: make feedforward dim a parameter; also activation
+
         encoder_layer = torch.nn.TransformerEncoderLayer(emb_size, bert_num_heads, emb_size * 4, dropout_rate,
                                                     torch.nn.GELU(), batch_first = True, norm_first = True)
         self.encoder = torch.nn.TransformerEncoder(encoder_layer, bert_num_blocks)
 
-        self.out = torch.nn.Linear(emb_size, num_items + 2)
+        #self.out = torch.nn.Linear(emb_size, num_items + 2)
 
-    def forward(self, input_seqs, poss_item_seqs):
+    def forward(self, input_seqs, items_to_predict):
         ''' 
     Input:
         input_seqs (torch.Tensor): Tensor containing input item sequences. Shape (batch_size, sequence_length).
-        poss_item_seqs (torch.Tensor): Tensor containing possible item sequences. Shape (batch_size, input_seq_len, output_seq_len, num_items)
+        items_to_predict (torch.Tensor): Tensor containing possible items. Shape (batch_size, input_seq_len, output_seq_len, num_items)
 
     Output:
         scores (torch.Tensor): Tensor containing interaction scores between input and possible items. Shape (batch_size, input_seq_len, output_seq_len, num_items)
@@ -49,17 +51,22 @@ class BERT4Rec(torch.nn.Module):
             self.encoder.layers[0].self_attn.num_heads, input_seqs.shape[1], 1)
 
         # Generate positions tensor
-        positions = torch.tile(torch.arange(input_seqs.shape[1], device=next(self.parameters()).device),
-                                [input_seqs.shape[0], 1])
+        positions = torch.tile(torch.arange(input_seqs.shape[1],
+                                            device=next(self.parameters()).device),
+                                            [input_seqs.shape[0], 1])
 
         embedded = self.dropout(self.item_emb(input_seqs) + self.pos_emb(positions))
 
         encoded = self.encoder(embedded, mask)
 
-        scores = self.out(encoded)
+        encoded = encoded.unsqueeze(2)
+        poss_item_embs = self.item_emb(items_to_predict)
+        # Use only last timesteps in items_to_predict --> cut log_feats to match poss_item_embs
+        encoded = encoded[:, -poss_item_embs.shape[1]:, :, :] # (B, T, 1, E)
+        scores = (encoded * poss_item_embs).sum(dim=-1)
 
-        scores = scores[:, -poss_item_seqs.shape[1]:, :]
-
-        scores = torch.gather(scores, -1, poss_item_seqs) # Get scores for items in poss_item_seqs
+        # scores = self.out(encoded)
+        # scores = scores[:, -items_to_predict.shape[1]:, :]
+        # scores = torch.gather(scores, -1, items_to_predict) # Get scores for items in items_to_predict
 
         return scores

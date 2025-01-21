@@ -4,3 +4,5 @@
 # Each package should be listed on a separate line
 
 torch
+torchmetrics
+pytorch_lightning

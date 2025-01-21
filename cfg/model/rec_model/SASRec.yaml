@@ -1,11 +1,8 @@
 name: SASRec
 
-num_blocks: 2
-emb_size: 50 #50 #[32, 64, 128, 256, 512]
+num_blocks: 1
+£emb_size: 
+  default: 8 #64
+  values: [32, 64, 128]
 num_heads: 1
-dropout_rate: 0.2 #0.2 ml-1m 0.5 amazon_beauty amazon_games
-
-^/step_routing:
-  model_input_from_batch: ["in_sid", "out_sid"]
-  loss_input_from_model_output:
-    input: null
+dropout_rate: 0.2

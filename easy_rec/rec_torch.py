@@ -21,11 +21,11 @@ class DictDataset(torch.utils.data.Dataset):
         self.data = data
 
         # Convert each value in the data dictionary to a PyTorch tensor
-        for key, value in self.data.items():
-            if isinstance(value, torch.Tensor):
-                self.data[key] = value.clone().detach()
-            else:
-                self.data[key] = torch.tensor(value)
+        # for key, value in self.data.items():
+        #     if isinstance(value, torch.Tensor):
+        #         self.data[key] = value.clone().detach()
+        #     else:
+        #         self.data[key] = torch.tensor(value)
 
     # Method to get an item from the dataset at a given index
     def __getitem__(self, index):
@@ -36,287 +36,374 @@ class DictDataset(torch.utils.data.Dataset):
         # Assumes that all values in the data dictionary have the same length
         return len(self.data[list(self.data.keys())[0]])
 
-#TODO: pass this function inside easy_torch
-# Define a custom PyTorch Dataset class named DictSequentialDataset that extends DictDataset
-class DictSequentialDataset(DictDataset):
-    # Constructor to initialize the sequential dataset with additional parameters
-    """
-    Custom PyTorch Dataset class for sequential data, extending the DictDataset.
+# class SequentialDataset(torch.utils.data.Dataset):
+#     def __init__(self, data):
+#         self.data = data
+#         super().__init__()
 
-    Args:
-        data (dict): Input dictionary containing sequential data.
-        sequential_keys (list): List of keys in the data dictionary representing sequential data.
-        padding_value (float): Value to use for padding sequences.
-        left_pad (bool): If True, pad sequences on the left; otherwise, pad on the right.
-        lookback (int): Number of time steps to look back in the sequences. (length of input sequence)
-        stride (int): Stride for selecting subsequences.
-        lookforward (int): Number of time steps to look forward in the sequences.
-        simultaneous_lookforward (int): Number of simultaneous time steps to look forward.
-        out_seq_len (int): Length of the output sequence.
-        keep_last (int): Number of samples to keep in the output sequence.
-        drop_original (bool): If True, drop the original keys from the data dictionary.
+#     def __getitem__(self, index):
+#         batch = super().__getitem__(index)
+#         for key,value in batch:
+#             print(key,value)
+#         print(sanaskjnas)
 
-    Returns:
-        dict: A dictionary containing input and output sequences for each key.
-    """
-    def __init__(self, 
-                 data, 
-                 sequential_keys=None, 
+# # Method to pair input and output sequences based on specified parameters
+# def pair_input_output(self, sequential_keys, padding_value, lookback, stride, lookforward, simultaneous_lookforward, out_seq_len, keep_last, drop_original=True):
+#     key_to_use = sequential_keys[0]
+#     max_len = self.data[key_to_use].shape[1]
+#     if out_seq_len is None: out_seq_len = max_len
+
+#     # Calculate input and output indices based on lookback, stride, and lookforward
+#     # input_indices = torch.stack([torch.arange(a-lookback,a) for a in range(max_len-lookforward, lookback-1, -stride)][::-1])
+#     input_indices = torch.stack([torch.arange(a-lookback,a) for a in range(max_len-lookforward-simultaneous_lookforward+1, max(lookback-1, max_len-lookforward-simultaneous_lookforward+1-out_seq_len), -stride)][::-1])
+#     # output_indices = torch.stack([torch.arange(a-lookback,a) for a in range(max_len, lookback-1+lookforward, -stride)][::-1])
+#     output_indices = torch.stack([torch.stack([torch.arange(b-simultaneous_lookforward+1,b+1) for b in torch.arange(a-lookback,a)]) for a in range(max_len, max(lookback-1+lookforward+simultaneous_lookforward-1,max_len-out_seq_len), -stride)][::-1])
+    
+#     # Get non-sequential keys in the data dictionary
+#     non_sequential_keys = [key for key in self.data.keys() if key not in sequential_keys]
+
+#     # Process each sequential key
+#     for key in sequential_keys:
+#         # Create input and output sequences based on calculated indices
+#         self.data[f"in_{key}"] = self.data[key][:,input_indices]
+#         self.data[f"out_{key}"] = self.data[key][:,output_indices]
+
+#         # Remove output values where input is padding
+#         input_is_padding = torch.isclose(self.data[f"in_{key}"], padding_value*torch.ones_like(self.data[f"in_{key}"]))
+#         self.data[f"out_{key}"][input_is_padding] = padding_value
+
+#         # Remove rows where all input or all output is padding
+#         to_keep = torch.logical_and(
+#             torch.logical_not(input_is_padding.all(-1)),
+#             torch.logical_not(torch.isclose(self.data[f"out_{key}"], padding_value*torch.ones_like(self.data[f"out_{key}"])).all(-1).all(-1)))
+
+#         self.data[f"in_{key}"] = self.data[f"in_{key}"][to_keep]
+#         self.data[f"out_{key}"] = self.data[f"out_{key}"][to_keep]
+
+#         # Remove output values if index is before out_seq_len from the end
+#         # Option 1: keep same shape
+#         # self.data[f"out_{key}"][:, :-out_seq_len] = padding_value
+#         # Option 2: shorten array
+#         self.data[f"out_{key}"] = self.data[f"out_{key}"][:, max(-keep_last,-out_seq_len+self.data[f"out_{key}"].shape[-1]-1):]
+#         # Shorten by number of samples reserved to this split, also removing simultaneous_lookforward
+
+#         # Optional: Squeeze out the last dimension if simultaneous_lookforward is 1
+#         # if simultaneous_lookforward == 1:
+#         #     self.data[f"out_{key}"] = self.data[f"out_{key}"].squeeze(-1)
+
+#         # Optionally, drop the original key from the data dictionary
+#         if drop_original:
+#             del self.data[key]
+
+#     # Repeat the indices of non-dropped rows for non-sequential keys
+#     orig_rows_repeat = torch.where(to_keep)[0]
+
+#     # Process each non-sequential key
+#     for key in non_sequential_keys:
+#         self.data[key] = self.data[key][orig_rows_repeat]
+
+#TODO: which parent class to use?
+#TODO: move this into easy_torch
+class SequentialCollator:
+    def __init__(self,
+                 sequential_keys,
+                 lookback,
                  padding_value=0, 
                  left_pad=True, 
-                 lookback=None, 
-                 stride=None, 
                  lookforward=1, 
                  simultaneous_lookforward=1,
                  out_seq_len=None,
                  keep_last = None,
                  drop_original=True):
         
-        self.data = data
-
-        # If sequential_keys is not provided, use all keys in the data dictionary
-        if sequential_keys is None:
-            print("WARNING: sequential_keys not provided. Using all keys in the data dictionary.")
-            sequential_keys = list(data.keys())
-
-        # If lookback and stride are not provided, set them based on the maximum length of values in the data
-        if lookback is None:
-            lookback = max([value.shape[-1] for value in data.values()]) + lookforward + simultaneous_lookforward
-        if stride is None:
-            stride = lookback
+        self.sequential_keys = sequential_keys
+        self.padding_value = padding_value
+        self.left_pad = left_pad
+        self.lookback = lookback
+        
+        self.lookforward = lookforward
+        self.simultaneous_lookforward = simultaneous_lookforward
+        self.out_seq_len = out_seq_len
+        
+        self.keep_last = keep_last
         if keep_last is None:
-            keep_last = lookback
+            self.keep_last = lookback
+
+        self.drop_original = drop_original
+
+        if self.left_pad:
+            self.pad_x_function = self.reverse
+            self.pad_out_func = self.flip
+        else:
+            self.pad_x_function = self.identity
+            self.pad_out_func = self.identity
+
+        self.needed_length = self.lookback + self.lookforward + self.simultaneous_lookforward
+        
+    #Functions needed because AttributeError: Can't pickle local object 'SequentialCollator.__init__.<locals>.<lambda>'
+    def identity(self, x):
+        return x
+    
+    def reverse(self, x):
+        return x[::-1]
+    
+    def flip(self, x):
+        return x.flip(dims=[1])
+    
+    def extra_pad(self, x):
+        if self.needed_length <= x.shape[1]:
+            return x
+        else:
+            return torch.cat([x, torch.zeros((x.shape[0], self.needed_length - x.shape[1]),dtype=x.dtype)],dim=1)
+
+    def __call__(self, batch):
+        out = {}
+
+        seq_lens = torch.tensor([len(x[self.sequential_keys[0]]) for x in batch])
 
         # Pad the sequences in the data using specified parameters
-        for key in sequential_keys:
-            if left_pad:
-                x_function = lambda x: x[::-1]
-                out_func = lambda x: x.flip(dims=[1])
+        for key in batch[0].keys():
+            if key in self.sequential_keys:
+                out[key] = self.pad_list_of_tensors([x[key] for x in batch])
             else:
-                x_function = lambda x: x
-                out_func = lambda x: x
-
-            needed_length = lookback + lookforward + simultaneous_lookforward
-            extra_pad = lambda x : x if needed_length <= x.shape[1] else torch.cat([x, torch.zeros((x.shape[0], needed_length - x.shape[1]),dtype=x.dtype)],dim=1)
-
-            self.data[key] = out_func(extra_pad(self.pad_list_of_tensors(self.data[key], padding_value=padding_value, x_function=x_function)))
-
+                out[key] = torch.stack([torch.tensor(x[key]) for x in batch])
+        
         # Pair input and output sequences based on specified parameters
-        self.pair_input_output(sequential_keys, padding_value, lookback, stride, lookforward, simultaneous_lookforward, out_seq_len, keep_last, drop_original)
+        out = self.pair_input_output(out, seq_lens)
 
-        # Call the constructor of the parent class (DictDataset)
-        super().__init__(self.data)
-
+        return out
+    
     # Method to pad a list of tensors and return the padded sequence as a tensor
-    def pad_list_of_tensors(self, list_of_tensors, padding_value=0, x_function= lambda x: x):
-        padded = torch.nn.utils.rnn.pad_sequence([torch.tensor(x_function(x)) for x in list_of_tensors], batch_first=True, padding_value=padding_value)
+    def pad_list_of_tensors(self, list_of_tensors):
+        padded = torch.nn.utils.rnn.pad_sequence([torch.tensor(self.pad_x_function(x)) for x in list_of_tensors], batch_first=True, padding_value=self.padding_value)
+        
+        padded = self.extra_pad(padded)
+
+        #Also add padding for simultaneous_lookforward
+        sim_lookf_pad = self.padding_value*torch.ones((len(padded),self.simultaneous_lookforward-1))
+        lookf_pad = self.padding_value*torch.ones((len(padded),self.lookforward))
+        padded = torch.concat([sim_lookf_pad,padded,lookf_pad],dim=1)
+
+        padded = self.pad_out_func(padded)
+
         # Change type to type of first non-empy list in list of tensors
         for x in list_of_tensors:
             if len(x)>0: break
         padded = padded.type(getattr(torch,str(type(x[0]).__name__)))
-        return padded
-    # Method to pair input and output sequences based on specified parameters
-    def pair_input_output(self, sequential_keys, padding_value, lookback, stride, lookforward, simultaneous_lookforward, out_seq_len, keep_last, drop_original=True):
-        key_to_use = sequential_keys[0]
-        max_len = self.data[key_to_use].shape[1]
-        if out_seq_len is None: out_seq_len = max_len
 
-        # Calculate input and output indices based on lookback, stride, and lookforward
-        # input_indices = torch.stack([torch.arange(a-lookback,a) for a in range(max_len-lookforward, lookback-1, -stride)][::-1])
-        input_indices = torch.stack([torch.arange(a-lookback,a) for a in range(max_len-lookforward-simultaneous_lookforward+1, max(lookback-1, max_len-lookforward-simultaneous_lookforward+1-out_seq_len), -stride)][::-1])
-        # output_indices = torch.stack([torch.arange(a-lookback,a) for a in range(max_len, lookback-1+lookforward, -stride)][::-1])
-        output_indices = torch.stack([torch.stack([torch.arange(b-simultaneous_lookforward+1,b+1) for b in torch.arange(a-lookback,a)]) for a in range(max_len, max(lookback-1+lookforward+simultaneous_lookforward-1,max_len-out_seq_len), -stride)][::-1])
+        return padded
+    
+    # Method to pair input and output sequences based on specified parameters
+    # Now based on left_padding; TODO: reverse array if opposite
+    def pair_input_output(self, data, seq_lens):
+        out_seq_len = seq_lens if self.out_seq_len is None else self.out_seq_len*torch.ones_like(seq_lens)
+
+        # decide current point t;
+        # input goes from t-lookback+1 to t;
+        # output goes from t+lookforward to t+lookforward+simultaneous_lookforward
+        output_poss_end_ids = seq_lens #-self.lookforward+1
+        output_poss_start_ids = torch.maximum(output_poss_end_ids-out_seq_len,torch.zeros_like(seq_lens))
+
+        input_poss_start_ids = output_poss_start_ids - self.lookforward
+        input_poss_end_ids = output_poss_end_ids - self.lookforward
+
+        true_starting_point = data[self.sequential_keys[0]].shape[1] - (seq_lens+(self.simultaneous_lookforward-1))
+        input_poss_start_ids += true_starting_point
+        input_poss_end_ids += true_starting_point
+
+        input_poss_start_ids = torch.minimum(input_poss_start_ids+(self.lookback-1),input_poss_end_ids-1)
+        input_poss_start_ids = torch.maximum(input_poss_start_ids,(self.lookback-1)*torch.ones_like(seq_lens))
+
+        #.int() floors the number, so max_len can't be selected (good, cause is out of bounds)
+        # Generate random indices for output sequences
+        rand = torch.randint(2**63 - 1, size=(len(seq_lens),))
+        current_index = (rand % (input_poss_end_ids - input_poss_start_ids) + input_poss_start_ids).int()
         
-        # Get non-sequential keys in the data dictionary
-        non_sequential_keys = [key for key in self.data.keys() if key not in sequential_keys]
+        if (current_index < 0).any():
+            raise ValueError("Some current index is negative")
+
+        # subtract lookback
+        input_indices = current_index.unsqueeze(1) - (torch.arange(self.lookback).flip(dims=[0])).unsqueeze(0)
+
+        # Compute input indices based on output indices
+        output_indices = input_indices + self.lookforward
+
+        # Add simultaneous_lookforward
+        output_indices = output_indices.unsqueeze(2) + torch.arange(self.simultaneous_lookforward).unsqueeze(0).unsqueeze(0)
 
         # Process each sequential key
-        for key in sequential_keys:
+        for key in self.sequential_keys:
             # Create input and output sequences based on calculated indices
-            self.data[f"in_{key}"] = self.data[key][:,input_indices]
-            self.data[f"out_{key}"] = self.data[key][:,output_indices]
-
-            # Remove output values where input is padding
-            input_is_padding = torch.isclose(self.data[f"in_{key}"], padding_value*torch.ones_like(self.data[f"in_{key}"]))
-            self.data[f"out_{key}"][input_is_padding] = padding_value
-
-            # Remove rows where all input or all output is padding
-            to_keep = torch.logical_and(
-                torch.logical_not(input_is_padding.all(-1)),
-                torch.logical_not(torch.isclose(self.data[f"out_{key}"], padding_value*torch.ones_like(self.data[f"out_{key}"])).all(-1).all(-1)))
-
-            self.data[f"in_{key}"] = self.data[f"in_{key}"][to_keep]
-            self.data[f"out_{key}"] = self.data[f"out_{key}"][to_keep]
+            data[f"in_{key}"] = data[key][torch.arange(data[key].shape[0]).unsqueeze(-1),input_indices]
+            data[f"out_{key}"] = data[key][torch.arange(data[key].shape[0]).unsqueeze(-1).unsqueeze(-1),output_indices]
 
             # Remove output values if index is before out_seq_len from the end
             # Option 1: keep same shape
             # self.data[f"out_{key}"][:, :-out_seq_len] = padding_value
             # Option 2: shorten array
-            self.data[f"out_{key}"] = self.data[f"out_{key}"][:, max(-keep_last,-out_seq_len+self.data[f"out_{key}"].shape[-1]-1):]
+            to_keep = -min(self.keep_last,out_seq_len.max())
+            data[f"out_{key}"] = data[f"out_{key}"][:, to_keep:]
             # Shorten by number of samples reserved to this split, also removing simultaneous_lookforward
 
             # Optional: Squeeze out the last dimension if simultaneous_lookforward is 1
             # if simultaneous_lookforward == 1:
             #     self.data[f"out_{key}"] = self.data[f"out_{key}"].squeeze(-1)
 
-            # Optionally, drop the original key from the data dictionary
-            if drop_original:
-                del self.data[key]
-
-        # Repeat the indices of non-dropped rows for non-sequential keys
-        orig_rows_repeat = torch.where(to_keep)[0]
-
-        # Process each non-sequential key
-        for key in non_sequential_keys:
-            self.data[key] = self.data[key][orig_rows_repeat]
-
-# Define a custom PyTorch DataLoader class for recommendation datasets, inheriting from DataLoader
-class RecommendationDataloader(torch.utils.data.DataLoader):
-    # Constructor to initialize the dataloader with required parameters and additional options
-    """
-    Custom PyTorch DataLoader class for recommendation datasets, extending the base DataLoader class.
-
-    Args:
-        dataset (Dataset): PyTorch Dataset object containing recommendation data.
-        original_sequences (list): List of original sequences.
-        num_items (int): Number of items in the dataset.
-        primary_key (str): Primary key for the dataset.
-        relevance (str): Type of relevance function to use.
-        num_negatives (int): Number of negative samples to generate.
-        padding_value (float): Value used for padding sequences.
-        mask_value (float): Value used for masking sequences.
-        mask_prob (float): Probability of applying masking to input sequences.
-        **kwargs: Additional keyword arguments for DataLoader.
-
-    Returns:
-        None
-    """
-    def __init__(self, 
-                 dataset, 
-                 original_sequences, 
-                 num_items, 
-                 primary_key="sid", 
-                 relevance=None, 
-                 num_negatives=1,
-                 padding_value=0,
+            if self.drop_original:
+                del data[key]
+        
+        return data
+    
+class RecommendationSequentialCollator(SequentialCollator):
+    def __init__(self,
+                 num_items,
+                 primary_key="sid",
+                 relevance=None,
+                 normalize_relevance=False,
+                 num_positives = 1,
+                 num_negatives = 1,
                  mask_value = None,
                  mask_prob = 0,
-                 **kwargs):
-        # Call the constructor of the parent class (DataLoader)
-        super().__init__(dataset, **kwargs)
+                 negatives_distribution = "uniform",
+                 id_key="uid",
+                 *args,**kwargs): #out_seq_len and padding_value are set by super().__init__
+        
+        super().__init__(*args,**kwargs)
 
-        # Initialize basic parameters
         self.num_items = num_items
-        # Convert original_sequences to a list of sets for faster lookup
-        self.original_sequences = [set(x) for x in original_sequences]
+        self.primary_key = primary_key
         self.in_key = f"in_{primary_key}"
         self.out_key = f"out_{primary_key}"
+        self.id_key = id_key
 
-        # Get the shape of the output from the dataset
-        for app in dataset:
-            break
-        # Set the number of positives based on the shape of the output
-        self.num_positives = app[self.out_key].shape[-1]
-
+        # Set the number of positives and negatives
+        self.num_positives = num_positives
         self.num_negatives = num_negatives
-
-        # Generate a relevance function based on the specified relevance type and shape of the output
-        self.relevance_function = generate_relevance(relevance, self.out_key)
-
-        self.padding_value = padding_value
+        
+        if negatives_distribution not in {"uniform",'dynamic'} and not isinstance(negatives_distribution, torch.Tensor): #modifica_g : aggiunto il caso di campionamento dinamico dei negativi  durante il training
+            raise NotImplementedError(f"Unsupported negatives_distribution: {negatives_distribution}")
+        self.negatives_distribution = negatives_distribution
+        if self.negatives_distribution == "uniform":
+            self.sample_from_negative_distribution = self.uniform_negatives
+        elif isinstance(negatives_distribution, torch.Tensor):
+            self.sample_from_negative_distribution = self.distr_negatives
+        elif callable(negatives_distribution):
+            self.sample_from_negative_distribution = negatives_distribution
+        else:
+            raise NotImplementedError(f"Unsupported negatives_distribution: {negatives_distribution}")
+            
+        self.relevance = relevance
+        self.normalize_relevance = normalize_relevance
+        # Set a relevance function based on the specified relevance type and data shape
+        if relevance in {None, "fixed", "linear", "exponential"}:
+            # Generate a relevance tensor based on the specified type and data shape
+            self.relevance_function = self.generate_relevance_from_type
+        elif isinstance(relevance, str):
+            # Use an existing output key as the relevance function
+            self.relevance_function = self.get_relevance_from_data
+        else:
+            # Raise an error for unsupported relevance types
+            raise NotImplementedError(f"Unsupported relevance: {relevance}")
 
         if mask_prob > 0 and mask_value is None:
-            mask_value = num_items
+            mask_value = num_items+1
         self.mask_value = mask_value
         self.mask_prob = mask_prob
 
+    def __call__(self, batch):
+        out = super().__call__(batch)
+
+        out["relevance"] = self.relevance_function(out) # Add relevance scores to out
+
+        # Add negative samples to the out
+        timesteps = out[self.out_key].shape[1]
+        negatives = self.sample_negatives([x[self.primary_key] for x in batch], timesteps, [x[self.id_key] for x in batch])
+
+        out[self.in_key] = self.mask_input(out[self.in_key])
+
+        out_is_padding = torch.isclose(out[self.out_key], self.padding_value*torch.ones_like(out[self.out_key]))
+        not_to_use = out_is_padding
+        if self.mask_value is not None:
+            relevant_in = out[self.in_key][:, -out[self.out_key].shape[1]:]
+            input_is_not_masking = torch.logical_not(torch.isclose(relevant_in, self.mask_value*torch.ones_like(relevant_in)))
+            not_to_use = torch.logical_or(not_to_use, input_is_not_masking.unsqueeze(-1))
+
+        all_not_to_use = not_to_use.all(-1)
+
+        negatives[all_not_to_use] = self.padding_value # Pad negative if out (i.e. positives) is padding #.all(-1) for out because out can have multiple values, i.e. simultaneous_lookforward
+        # Masked tensor are a prototype in torch, but could solve many issues with padding and not wanting to compute losses or metrics on padding
+        #negatives = torch.masked.masked_tensor(negatives, out_is_padding.unsqueeze(-1))
+
+        out[self.out_key] = torch.cat([out[self.out_key], negatives], dim=-1) #concatenate negatives to out[out_key]
+        out["relevance"] = torch.cat([out["relevance"], torch.zeros_like(negatives)], dim=-1) #concatenate 0 relevance to relevance
+
+        out["relevance"][:,:,:not_to_use.shape[-1]][not_to_use] = float("nan") # Nan relevance if out is padding or input is not masked (if applicable)
+        out["relevance"][:,:,not_to_use.shape[-1]:][all_not_to_use] = float("nan") # Nan relevance if all out is padding
+
+        return out
+    
+    def uniform_negatives(self, possible_negatives, n, *args):
+        return possible_negatives[torch.randint(0, len(possible_negatives), (n,))]
+    
+    def distr_negatives(self, possible_negatives, n, *args):
+        distr = self.negatives_distribution[possible_negatives]
+        repl = True if len(possible_negatives) < n else True
+        return possible_negatives[torch.multinomial(distr, n, replacement=repl)]
+
     # Method to sample negative items for a given set of indices
-    def sample_negatives(self, indices, t=1):
+    def sample_negatives(self, original_sequences, t=1, id_keys=[]):
+        id_keys = id_keys if len(id_keys)>0 else [None]*len(original_sequences)
         if self.num_negatives == 0:
-            return torch.zeros(len(indices), t, self.num_negatives, dtype=torch.long)
-        negatives = torch.zeros(len(indices), self.num_negatives*t, dtype=torch.long)
-        for i, index in enumerate(indices):
+            return torch.zeros(len(original_sequences), t, self.num_negatives, dtype=torch.long)
+        negatives = torch.zeros(len(original_sequences), self.num_negatives*t, dtype=torch.long)
+        for i, (orig_seq,id_key) in enumerate(zip(original_sequences,id_keys)): #TODO: parallelize this
             # Get possible negative items that are not in the original sequence
-            possible_negatives = torch.tensor(list(set(range(1, self.num_items + 1)).difference(self.original_sequences[index-1]))) #-1 is needed because index starts from 1
+            possible_negatives = torch.tensor(list(set(range(1, self.num_items + 1)).difference(orig_seq))) #-1 is needed because index starts from 1
             # Randomly sample num_negatives negative items
-            negatives[i] = possible_negatives[torch.randint(0, len(possible_negatives), (self.num_negatives*t,))]
+            negatives[i] = self.sample_from_negative_distribution(possible_negatives, self.num_negatives*t, id_key)
             #negatives[i] = possible_negatives[torch.randperm(len(possible_negatives))[:self.num_negatives*t]]
-        negatives = negatives.reshape(len(indices), t, max(self.num_negatives,1))
+        negatives = negatives.reshape(len(original_sequences), t, max(self.num_negatives,1))
         return negatives
     
     def mask_input(self, input):
         if self.mask_prob == 0: return input
         mask = torch.rand(input.shape) < self.mask_prob
-        mask[:,-1] = True #Always mask last item (for val / test purposes) #TODO: generalize to more testing items
+        if self.out_seq_len is not None:
+            mask[:,-self.out_seq_len:] = True #Always mask last items (for val / test purposes)
+            mask[:,:-self.out_seq_len] = False #Never mask first items
+        input_is_padding = torch.isclose(input, self.padding_value*torch.ones_like(input))
+        mask[input_is_padding] = False
         input[mask] = self.mask_value
         return input
-    # TODO: deleting objects?
 
-    # Custom iterator method to yield batches with additional information
-    def __iter__(self):
-        for out in super().__iter__():
-            # Add negative samples and relevance scores to the batch
-            out["relevance"] = self.relevance_function(out)
-            timesteps = out[self.out_key].shape[1]
-            negatives = self.sample_negatives(out["uid"], timesteps)
-            out[self.in_key] = self.mask_input(out[self.in_key])
-            relevant_in = out[self.in_key][:, -out[self.out_key].shape[1]:]
-            not_to_use = torch.isclose(out[self.out_key], self.padding_value*torch.ones_like(out[self.out_key])).all(-1) #.all(-1) for out because out can have multiple values, i.e. simultaneous_lookforward
-            if self.mask_value is not None:
-                not_to_use = torch.logical_or(not_to_use, torch.logical_not(torch.isclose(relevant_in, self.mask_value*torch.ones_like(relevant_in))))
-            #negatives[out_is_padding] = self.padding_value # Pad negative if out (i.e. positives) is padding
-            
-            # Masked tensor are a prototype in torch, but could solve many issues with padding and not wanting to compute losses or metrics on padding
-            #negatives = torch.masked.masked_tensor(negatives, out_is_padding.unsqueeze(-1))
+    # Function to generate a relevance tensor based on the specified relevance type and shape
+    def generate_relevance_from_type(self, complete_data):
+        relevance_type = self.relevance
+        data = complete_data[self.out_key]
+        shape = data.shape
+        if relevance_type is None or relevance_type == "fixed":
+            # Generate a tensor of ones if the relevance type is None or fixed
+            app = torch.ones(shape[-1])
+        else:
+            # Generate a tensor with values from 1 to 0 with equal spacing
+            app = torch.linspace(0, 1, shape[-1])[::-1]
+            # Adjust the tensor based on the relevance type
+            if relevance_type == "linear":
+                pass
+            elif relevance_type == "exponential":
+                app = torch.exp(app)
 
-            #concatenate negatives to out[out_key]
-            out[self.out_key] = torch.cat([out[self.out_key], negatives], dim=-1)
-            #concatenate 0 relevance to relevance
-            out["relevance"] = torch.cat([out["relevance"], torch.zeros_like(negatives)], dim=-1)
+        # Normalize the tensor
+        if self.normalize_relevance:
+            app /= torch.sum(app)
 
-            out["relevance"][not_to_use] = float("nan") # Nan relevance if out is padding
+        # Repeat the tensor to match the shape
+        app = app.repeat(*shape[:-1], 1)
 
-            # Yield the modified batch
-            yield out
-
-# TODO? Put inside RecommendationDataloader
-            # TODO: delete this functions beacuse dont use them in our code?
-# Function to generate a relevance function based on the specified relevance type and data shape
-def generate_relevance(relevance, out_key):
-    if relevance in {None, "fixed", "linear", "exponential"}:
-        # Generate a relevance tensor based on the specified type and data shape
-        # Define a lambda function to return the generated relevance tensor
-        relevance_function = lambda data: generate_relevance_from_type(relevance, data[out_key])
-    elif isinstance(relevance, str):
-        # Use an existing output key as the relevance function
-        relevance_function = lambda data: data[f"out_{relevance}"]
-    else:
-        # Raise an error for unsupported relevance types
-        raise NotImplementedError(f"Unsupported relevance: {relevance}")
-
-    return relevance_function
-
-# TODO? Put inside RecommendationDataloader
-# Function to generate a relevance tensor based on the specified relevance type and shape
-def generate_relevance_from_type(relevance_type, data):
-    shape = data.shape
-    if relevance_type is None or relevance_type == "fixed":
-        # Generate a tensor of ones if the relevance type is None or fixed
-        app = torch.ones(shape[-1])
-    else:
-        # Generate a tensor with values from 1 to 0 with equal spacing
-        app = torch.linspace(0, 1, shape[-1])[::-1]
-        # Adjust the tensor based on the relevance type
-        if relevance_type == "linear":
-            pass
-        elif relevance_type == "exponential":
-            app = torch.exp(app)
-
-    # Normalize the tensor
-    app /= torch.sum(app)
-    # Repeat the tensor to match the shape
-    app = app.repeat(*shape[:-1], 1)
-    return app
+        return app
+    
+    def get_relevance_from_data(self, complete_data):
+        return complete_data[self.relevance]
 
 
 def prepare_rec_datasets(data,
@@ -355,11 +442,62 @@ def prepare_rec_datasets(data,
                 data_to_use[key] = data[f"{split_name}_{key}"]
 
         # Create the DataLoader
-        datasets[split_name] = DictSequentialDataset(data_to_use, **split_dataset_params)
+        datasets[split_name] = DictDataset(data_to_use, **split_dataset_params)
 
     return datasets
 
-def prepare_rec_data_loaders(datasets, data,
+def prepare_rec_collators(split_keys = ["train", "val", "test"],
+                         collator_class = RecommendationSequentialCollator,
+                         **collator_params):
+    """
+    Prepare recommendation data collators for training and evaluation.
+
+    Args:
+        data (dict): Input dictionary containing data.
+        split_keys (list): List of split keys for data collators.
+        original_seq_key (str): Key for original sequences in the data.
+        **collator_params: Additional parameters for data collator preparation.
+
+    Returns:
+        dict: Dictionary containing prepared recommendation data collators for each split.
+    """
+
+    # Default collator parameters
+    default_collator_params = {}
+
+    # Combine default and custom collator parameters
+    collator_params = dict(list(default_collator_params.items()) + list(collator_params.items()))
+    
+    collators = {}
+    for split_name in split_keys:
+        split_collator_params = deepcopy(collator_params)
+        # Select specific parameters for this split
+        for key, value in split_collator_params.items():
+            if isinstance(value, dict):
+                if split_name in value.keys():
+                    split_collator_params[key] = value[split_name]
+        split_collator_params = change_num_negative_if_float(split_collator_params)
+
+        # orig_seq_id = original_seq_id if original_seq_id in data else f"{split_name}_{original_seq_id}"
+        # orig_seq_key = original_seq_key if original_seq_key in data else f"{split_name}_{original_seq_key}"
+        # original_seq = {k:v for k,v in zip(data[orig_seq_id],data[orig_seq_key])}
+
+        # Create the DataCollator
+        collators[split_name] = collator_class(**split_collator_params)
+
+    return collators
+
+def change_num_negative_if_float(collator_params):
+    if "num_negatives" in collator_params:
+        if isinstance(collator_params["num_negatives"], float):
+            collator_params["num_negatives"] = int(collator_params["num_negatives"]*collator_params["num_items"])
+        # elif isinstance(collator_params["num_negatives"], dict):
+        #     for key in collator_params["num_negatives"]:
+        #         if isinstance(collator_params["num_negatives"][key], float):
+        #             collator_params["num_negatives"][key] = int(collator_params["num_negatives"][key]*total_items)
+    return collator_params
+
+def prepare_rec_data_loaders(datasets,
                              split_keys = ["train", "val", "test"],
                              original_seq_key="sid",
                              **loader_params):
@@ -377,7 +515,7 @@ def prepare_rec_data_loaders(datasets, data,
         dict: Dictionary containing prepared recommendation data loaders for each split.
     """                         
     # TODO: dict instead of list
-    # I don't remember what I meant by this comment...
+    # I don't remember what I meant by this comment
     
     # Default loader parameters
     default_loader_params = {
@@ -398,14 +536,9 @@ def prepare_rec_data_loaders(datasets, data,
             if isinstance(value, dict):
                 if split_name in value.keys():
                     split_loader_params[key] = value[split_name]
-
-        if original_seq_key in data:
-            original_seq = data[original_seq_key]
-        else:
-            original_seq = data[f"{split_name}_{original_seq_key}"]
         
         # Create the DataLoader
-        loaders[split_name] = RecommendationDataloader(datasets[split_name], original_seq, **split_loader_params)
+        loaders[split_name] = torch.utils.data.DataLoader(datasets[split_name], **split_loader_params)
 
     return loaders
 
