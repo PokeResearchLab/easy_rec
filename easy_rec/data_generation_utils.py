@@ -140,6 +140,8 @@ def get_rating_files_per_dataset(dataset_name):
         return ['behance.csv']
     elif dataset_name == "yelp":
         return ['yelp.csv']
+    elif dataset_name == "tim":
+        return ['dataset.csv']
     else:
         raise NotImplementedError(f"Get_rating_files_per_dataset for dataset {dataset_name} not supported")
 
@@ -210,7 +212,7 @@ def specific_preprocess(dataset_raw_folder, dataset_name):
         all_reviews = pd.DataFrame(all_reviews)
         all_reviews.to_csv(os.path.join(dataset_raw_folder, 'yelp.csv'), header=False, index=False)
     elif dataset_name == "behance":
-        file_path = os.path.join(dataset_raw_folder, 'behance.txt')  # IT'S NOT A JSON... (NOR jsonl: single quotes instead of doubles)
+        file_path = os.path.join(dataset_raw_folder, 'Behance_appreciate_1M')
         all_reviews = []
         with open(file_path, "r") as f:
             for line in f:
@@ -335,6 +337,12 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
         df.columns = ['uid', 'sid', "s_cat", "s_cat_name", "latitude", "longitude", "timezone_offset", "UTC_time"]
         df["rating"] = 1 #there are no ratings
         df["timestamp"] = df["UTC_time"].apply(lambda x: datetime.datetime.strptime(x, "%a %b %d %H:%M:%S %z %Y").timestamp())
+        return df
+    elif dataset_name == "tim":
+        file_path = os.path.join(dataset_raw_folder,'dataset.csv')
+        df = pd.read_csv(file_path, header=None, engine="python")
+        df.columns = ['uid', 'timestamp', "s_cat_name", 'rating', "offer_number"] + [f"PCAFeat_{i}" for i in range(64)] + ['sid']
+        df["rating"] = (df["rating"]=="Accettato")*1
         return df
     else:
         raise NotImplementedError(f"Load_ratings_df for dataset {dataset_name} not supported")

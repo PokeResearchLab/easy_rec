@@ -32,6 +32,12 @@ curl -k -o All_Beauty.json.gz https://datarepo.eng.ucsd.edu/mcauley_group/data/a
 gzip -d All_Beauty.json.gz
 cd ..
 
+# Behance
+mkdir behance
+cd behance
+curl -k -o Behance_appreciate_1M.gz https://datarepo.eng.ucsd.edu/mcauley_group/gdrive/behance/Behance_appreciate_1M.gz
+gzip -d Behance_appreciate_1M.gz
+cd ..
 
 # Foursquare
 mkdir foursquare-tky
@@ -58,3 +64,10 @@ mkdir bookcrossing
 cd bookcrossing
 wget -O BX-Book-Ratings.csv https://github.com/ashwanidv100/Recommendation-System---Book-Crossing-Dataset/raw/refs/heads/master/BX-CSV-Dump/BX-Book-Ratings.csv
 cd ..
+
+#Yelp?
+#wget -O yelp.json.zip https://business.yelp.com/external-assets/files/Yelp-JSON.zip --header="User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
+# header needed to avoid 403 Forbidden error
+#unzip yelp.json.zip
+#cd Yelp\ JSON
+#tar -xvzf yelp_dataset.tar

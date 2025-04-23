@@ -157,10 +157,15 @@ class SequentialCollator:
             return torch.cat([x, torch.zeros((x.shape[0], self.needed_length - x.shape[1]),dtype=x.dtype)],dim=1)
 
     def __call__(self, batch):
-        out = {}
-
         seq_lens = torch.tensor([len(x[self.sequential_keys[0]]) for x in batch])
 
+        out = self.main_call(batch, seq_lens)
+    
+        return out
+    
+    def main_call(self, batch, seq_lens):
+        out = {}
+        
         # Pad the sequences in the data using specified parameters
         for key in batch[0].keys():
             if key in self.sequential_keys:
@@ -170,9 +175,8 @@ class SequentialCollator:
         
         # Pair input and output sequences based on specified parameters
         out = self.pair_input_output(out, seq_lens)
-
         return out
-    
+
     # Method to pad a list of tensors and return the padded sequence as a tensor
     def pad_list_of_tensors(self, list_of_tensors):
         padded = torch.nn.utils.rnn.pad_sequence([torch.tensor(self.pad_x_function(x)) for x in list_of_tensors], batch_first=True, padding_value=self.padding_value)
@@ -253,6 +257,26 @@ class SequentialCollator:
                 del data[key]
         
         return data
+    
+class SmartPaddingSequentialCollator(SequentialCollator):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.needed_length_backup = self.needed_length
+        self.lookback_backup = self.lookback
+
+    def __call__(self, batch):
+        seq_lens = torch.tensor([len(x[self.sequential_keys[0]]) for x in batch])
+
+        # Set the lookback and needed length to the minimum of the current batch
+        self.lookback = min(max(seq_lens),self.lookback)
+        self.needed_length = self.needed_length_backup - self.lookback_backup + self.lookback
+
+        out = self.main_call(batch, seq_lens)
+        
+        # Reset the needed length and lookback to their original values
+        self.needed_length, self.lookback = self.needed_length_backup, self.lookback_backup
+
+        return out
     
 class RecommendationSequentialCollator(SequentialCollator):
     def __init__(self,
@@ -405,7 +429,11 @@ class RecommendationSequentialCollator(SequentialCollator):
     def get_relevance_from_data(self, complete_data):
         return complete_data[self.relevance]
 
-
+class RecommendationSmartPaddingSequentialCollator(
+        RecommendationSequentialCollator, SmartPaddingSequentialCollator
+    ):
+    pass
+    
 def prepare_rec_datasets(data,
                          split_keys={"train": ["sid", "timestamp", "rating", "uid"],
                                      "val": ["sid", "timestamp", "rating", "uid"],
