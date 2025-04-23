@@ -1,78 +1,86 @@
 # Easy Lightning: 🚀 Streamlining Deep Learning with PyTorch Lightning
 
-**Easy Lightning** is a versatile Python library meticulously crafted to streamline the process of configuring and building AI-Deep learning models using the power of PyTorch Lightning and PyTorch models. With its unique configuration-based approach, Easy Lightning empowers developers and data scientists to effortlessly harness the full potential of deep learning.
+**EasyRec** is a versatile Python library carefully designed to streamline the process of configuring and building Sequential Recommender Systems models using the power and robust capabilites of PyTorch Lightning and PyTorch models.
 
 ## 🌟 Key Features
 
-1. **User-Friendly Configuration:** Easy Lightning revolutionizes the way you work with deep learning by providing a seamless configuration-based interface. All your settings can be easily defined in YAML files, making it painless to tweak and fine-tune your experiments.
+1. **User-Friendly Configuration:** EasyRec revolutionizes the way you work with Sequential Recommender Systems by providing a seamless configuration-based interface. All your settings can be easily defined in YAML files, making it effortless to customize and fine-tune your experiments.
 
 2. **Three Essential Utilities:**
-   - 📊 **Data:** Easy Lightning simplifies data handling, allowing you to load and preprocess data effortlessly.
+   - 📊 **Data:** EasyRec simplifies data handling, allowing you to load and preprocess data effortlessly.
    - 📝 **Experiments:** Define, track, and save experiments with unique IDs to prevent duplication. Keep your work organized and accessible.
-   - ⚙️ **Torch Integration:** Seamlessly integrate PyTorch models, train, test, and save your models with minimal effort. Easy Lightning handles the heavy lifting, so you can focus on innovation.
-
-## 🚀 Why Choose Easy Lightning?
-
-- **Efficiency:** Say goodbye to repetitive and time-consuming setup tasks. Easy Lightning automates the tedious parts of deep learning, giving you more time for experimentation and innovation.
-
-- **Flexibility:** Whether you're a seasoned deep learning practitioner or just getting started, Easy Lightning adapts to your needs. Its configuration-based approach makes it accessible to all skill levels.
-
-- 🛡️ **Error Prevention:** With experiment IDs and organized project management, Easy Lightning ensures that your work remains clean and error-free, even as your projects scale.
+   - ⚙️ **Torch Integration:** Seamlessly integrate PyTorch models, train, test, and save your models with minimal effort. EasyRec handles the heavy lifting, so you can focus on innovation.
 
 ## 📁 Important Files and Folders in the Project
 
 Below is an outline of key files and folders you'll find in this project, along with their purposes:
 
-### Files
 
-1. **setup.py**
-    - Setup script for Python's setuptools. Specifies package metadata, dependencies, and other distribution essentials.
-
-2. **requirements.txt**
-    - Lists required Python packages and their versions. Ensures that necessary dependencies are installed.
-  
-    - Currently includes:
-        - PyTorch: Popular deep learning library.
-        - PyTorch Lightning: Lightweight PyTorch wrapper.
-
-3. **README.md**
-    - Provides an overview of the project and usage instructions.
-
-4. **.gitignore**
-    - Specifies files and folders that should be ignored by Git, ensuring that unnecessary or sensitive data is not included in the version control.
-
-### Folders
-
-1. **easy_data**
-    - Contains utilities for data loading, file management, data and data structure management, data splitting, and statistics.
-
-2. **easy_exp**
-    - Manages experiments by defining unique IDs based on their configuration.
-    - Allows for hashing of each ID to check for previously conducted experiments.
-    - Excludes GPU/CPU usage and training modes from the experiment ID.
-    - Saves experiments in a specific file along with their relative configuration.
-    - Includes methods for parsing YAML configs and handles special characters used in them (e.g., through `var.py`).
-
-3. **easy_torch**
+### Utilities
+1. **easy_exp**
+    - Includes functions for experiment handling, such as creating experiment IDs, saving and loading experiments, and managing experiment logs.
+2. **easy_rec**
+    - This is the code for the paper Sequential Recommender Systems Reproducibility Analysis.
+    - Includes functions for data pre-processing and dataloaders creation
+    - Defines Sequential Recommendation Models
+    - Contains IR metrics, such as NDCG, Recall, and MRR
+    - Provides losses for model's training and evaluation
+4. **easy_torch**
     - Includes functions for metrics, loading models, and creating trainers in PyTorch Lightning.
     - Defines steps, loss, optimizer, and other parameters to use.
     - Sets callbacks and dataloaders.
-    - Manages TorchVision models, allowing you to load them and modify their internal modules if necessary.
     - Also includes utilities for training and testing the model, as well as saving and reading logs.
 
-4. **cfg**
-    - Contains demo configurations used in testing phase of this repo.
+### Folders
 
-5. **ntb**
-    - Houses three notebooks for testing the utilities offered by the three utility folders.
-    - Also includes a notebook with information about the objectives and logic used in the implementation.
+1. **cfg**
+    - Contains the configurations used in the testing phase of this repo: these are YAML files nested inside each other. The main one is config_rec.yaml, where you specify the name of the experiment.
+      - data_cfg: loading and preprocessing parameters of the dataset.
+      - model: optimizer, metrics and name of the model used.
+      - trainer_params_cfg: accelerator, number of epochs, logger to save files.
+      - loader_params_cfg: batch size, number of workers, number of negatives.
+      - emission_tracker: configuration for [CodeCarbon](https://codecarbon.io/).
+      - flops_profiler: configuration for [DeepSpeed](https://deepspeed.readthedocs.io/en/latest/index.html).
+      - rec_models: specific configurations for each model.
+2. **ntb**
+    - Houses a notebook for training and testing a Sequential Recommender System on a dataset.
+3.  **out**
+    - Includes metrics and energy consumption for each experiments. Also includes the saved parameters of the best model per single run.
 
-By understanding the role of each file and folder, you'll be better equipped to navigate and work on the project.
 
-## 🧑‍🚀 Authors
+## How to run an experiment
 
-- **Federico Siciliano**: Researcher in Data Science at the University of La Sapienza of Rome.
-- **Federico Carmignani**: Master's Thesis Student in Engineering in Computer Science at the University of La Sapienza of Rome and Software Engineer at Sytel Reply.
+To run our code follow the next steps:
 
+- Download and install easy_lightning.
+  
+``pip3 install  --upgrade --force-reinstall git+https://github.com/PokeResearchLab/easy_lightning.git``
 
-Start your deep learning journey with Easy Lightning today and experience a new level of simplicity and efficiency in creating and configuring AI-Deep learning notebooks.
+- Download this repo.
+  
+``git clone https://github.com/antoniopurificato/recsys_repro_conf && cd recsys_repro_conf``
+
+- Install the necessary requirements.
+
+``pip3 install -r requirements.txt``
+- Download the data;
+
+``cd ntb && bash download_data.bash``
+- Run a simple experiment. By default, these files are set to run SASRec on ML-1M dataset.
+
+``python3 main.py``
+
+## How to cite
+
+```bibtex
+@article{betello2024reproducible,
+  title={A Reproducible Analysis of Sequential Recommender Systems},
+  author={Betello, Filippo and Purificato, Antonio and Siciliano, Federico and Trappolini, Giovanni and Bacciu, Andrea and Tonellotto, Nicola and Silvestri, Fabrizio},
+  journal={IEEE Access},
+  year={2024},
+  publisher={IEEE}
+}
+```
+
+#### Contributors
+Federico Siciliano, Filippo Betello, Antonio Purificato, Giulia Di Teodoro, Maria Diana Calagaru, Erica Luciani, Federico Carmignani.
