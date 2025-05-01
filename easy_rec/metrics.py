@@ -84,14 +84,21 @@ class RecMetric(torchmetrics.Metric):
         self.batch_metric = batch_metric
         self.rank_corrections = rank_corrections
 
+        self.out_keys = []
+
         # Initialize state variables for correct predictions and total examples
         for rank_correction_name in self.rank_corrections.keys():
             for top_k in self.top_k:
+                key = f"@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}"
+                self.out_keys.append(key)
+                key = f"correct{key}" #add correct prefix
                 if not self.batch_metric:
-                    self.add_state(f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", default=torch.tensor(0.), dist_reduce_fx="sum")
+                    self.add_state(key, default=torch.tensor(0.), dist_reduce_fx="sum")
                 else:
-                    self.add_state(f"correct@{'_'.join([str(x) for x in [top_k,rank_correction_name] if x])}", default=[], dist_reduce_fx="cat")
-        
+                    self.add_state(key, default=[], dist_reduce_fx="cat")
+                
+        self.out_keys = sorted(self.out_keys)
+
         if not self.batch_metric:
             self.add_state(f"total", default=torch.tensor(0.), dist_reduce_fx="sum")
 
@@ -106,11 +113,12 @@ class RecMetric(torchmetrics.Metric):
         out = {}
         for rank_correction_name in self.rank_corrections.keys():
             for k in self.top_k:
-                out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"] = getattr(self, f"correct@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}")
+                key = f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"
+                out[key] = getattr(self, f"correct@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}")
                 if not self.batch_metric:
-                    out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"] = out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"] / self.total
+                    out[key] = out[key] / self.total
                 else:
-                    out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"] = torchmetrics.utilities.dim_zero_cat(out[f"@{'_'.join([str(x) for x in [k,rank_correction_name] if x])}"])
+                    out[key] = torchmetrics.utilities.dim_zero_cat(out[key])
         return out
     
     def not_nan_subset(self, **kwargs):
