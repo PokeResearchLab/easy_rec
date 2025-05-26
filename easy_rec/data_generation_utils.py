@@ -142,6 +142,8 @@ def get_rating_files_per_dataset(dataset_name):
         return ['yelp.csv']
     elif dataset_name == "tim":
         return ['dataset.csv']
+    elif dataset_name == "gowalla":
+        return ['loc-gowalla_totalCheckins.txt']
     else:
         raise NotImplementedError(f"Get_rating_files_per_dataset for dataset {dataset_name} not supported")
 
@@ -261,7 +263,13 @@ def specific_preprocess(dataset_raw_folder, dataset_name):
         all_reviews = pd.DataFrame(all_reviews)
         all_reviews.to_csv(os.path.join(dataset_raw_folder, orig_file_name + '.csv'), header=False, index=False)
     
-    # If the dataset_name is neither "steam" nor an Amazon dataset, raise NotImplementedError
+    #Gowalla
+    elif dataset_name == 'gowalla':
+        file_path = os.path.join(dataset_raw_folder, 'loc-gowalla_totalCheckins.txt')
+        sep = '\t'
+        origin_data = pd.read_csv(file_path, delimiter=sep, header=None, engine='python')
+        origin_data.to_csv(os.path.join(dataset_raw_folder, 'gowalla.csv'), header=False, index=False)
+    
     else:
         raise NotImplementedError(f"specific_preprocess for dataset {dataset_name} not supported")
 
@@ -282,17 +290,14 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
         file_path = os.path.join(dataset_raw_folder,'ratings.dat')
         df = pd.read_csv(file_path, sep='::', header=None, engine="python")
         df.columns = ['uid', 'sid', 'rating', 'timestamp']
-        return df
     elif dataset_name == "ml-100k":
         file_path = os.path.join(dataset_raw_folder,'u.data')
         df = pd.read_csv(file_path, sep='\t', header=None, engine="python")
         df.columns = ['uid', 'sid', 'rating', 'timestamp']
-        return df
     elif dataset_name == "ml-20m":
         file_path = os.path.join(dataset_raw_folder,'ratings.csv')
         df = pd.read_csv(file_path, sep=',', header=0, engine="python")
         df.columns = ['uid', 'sid', 'rating', 'timestamp']
-        return df
     elif dataset_name == "bookcrossing":
         file_path = os.path.join(dataset_raw_folder,'BX-Book-Ratings.csv')
         df = pd.read_csv(file_path, sep=';', header=0, engine="python", quoting=3, encoding = "unicode_escape")
@@ -301,7 +306,6 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
         df['uid'] = df['uid'].replace('"', '', regex=True).apply(lambda x: pd.to_numeric(x, errors='coerce').astype(int))
         df['rating'] = df['rating'].replace('"', '', regex=True).apply(lambda x: pd.to_numeric(x, errors='coerce').astype(int))
         df["timestamp"] = 0
-        return df
     elif "amazon" in dataset_name or dataset_name=="steam" or dataset_name=="behance" or dataset_name=="yelp":
         if dataset_name == "steam":
             orig_file_name = 'steam'
@@ -326,7 +330,6 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
         file_path = os.path.join(dataset_raw_folder, orig_file_name + '.csv')
         df = pd.read_csv(file_path, header=None, engine="python")
         df.columns = ['uid', 'sid', 'rating', 'timestamp']
-        return df
     elif "foursquare" in dataset_name:
         if dataset_name == "foursquare-nyc":
             filename = 'dataset_TSMC2014_NYC.txt'
@@ -337,16 +340,22 @@ def load_ratings_df(dataset_raw_folder, dataset_name):
         df.columns = ['uid', 'sid', "s_cat", "s_cat_name", "latitude", "longitude", "timezone_offset", "UTC_time"]
         df["rating"] = 1 #there are no ratings
         df["timestamp"] = df["UTC_time"].apply(lambda x: datetime.datetime.strptime(x, "%a %b %d %H:%M:%S %z %Y").timestamp())
-        return df
     elif dataset_name == "tim":
         file_path = os.path.join(dataset_raw_folder,'dataset.csv')
         df = pd.read_csv(file_path, header=None, engine="python")
         df.columns = ['uid', 'timestamp', "s_cat_name", 'rating', "offer_number"] + [f"PCAFeat_{i}" for i in range(64)] + ['sid']
         df["rating"] = (df["rating"]=="Accettato")*1
-        return df
+    elif dataset_name == "gowalla":
+        sep = '\t'
+        file_path = os.path.join(dataset_raw_folder, 'loc-gowalla_totalCheckins.txt')
+        df = pd.read_csv(file_path, sep=sep, header=0, engine="python")
+        df.columns = ['uid',  "UTC_time", "latitude", "longitude", 'sid']
+        df["rating"] = 1  # there are no ratings
+        df["timestamp"] = df["UTC_time"].apply(lambda x: datetime.datetime.strptime(x, '%Y-%m-%dT%H:%M:%SZ').timestamp())
     else:
         raise NotImplementedError(f"Load_ratings_df for dataset {dataset_name} not supported")
-    
+    return df
+
 
 #implicit = don't use ratings
 #explicit = keep ratings

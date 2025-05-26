@@ -28,7 +28,7 @@ rm ml-latest-small.zip
 # Amazon Beauty
 mkdir amazon_beauty
 cd amazon_beauty
-curl -k -o All_Beauty.json.gz https://datarepo.eng.ucsd.edu/mcauley_group/data/amazon_v2/categoryFiles/All_Beauty.json.gz
+curl -k -o All_Beauty.json.gz https://mcauleylab.ucsd.edu/public_datasets/data/amazon_v2/categoryFiles/All_Beauty.json.gz
 gzip -d All_Beauty.json.gz
 cd ..
 
@@ -64,6 +64,14 @@ mkdir bookcrossing
 cd bookcrossing
 wget -O BX-Book-Ratings.csv https://github.com/ashwanidv100/Recommendation-System---Book-Crossing-Dataset/raw/refs/heads/master/BX-CSV-Dump/BX-Book-Ratings.csv
 cd ..
+
+#Gowalla
+mkdir gowalla
+cd gowalla
+wget https://snap.stanford.edu/data/loc-gowalla_totalCheckins.txt.gz
+gzip -d loc-gowalla_totalCheckins.txt.gz
+cd ..
+
 
 #Yelp?
 #wget -O yelp.json.zip https://business.yelp.com/external-assets/files/Yelp-JSON.zip --header="User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
